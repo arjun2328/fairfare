@@ -46,6 +46,7 @@ class Meal(BaseModel):
     equipment: list[Equipment]
     palatability: int = Field(ge=1, le=5)
     ingredients: dict[str, int]
+    description: str = ""          # one plain sentence shown under the name
 
 
 class PantryItem(BaseModel):
@@ -72,6 +73,7 @@ class Household(BaseModel):
     out_of_stock: list[str] = []
     pantry: dict[str, int] = {}
     assume_staples: bool = True
+    use_more_snap: bool = False   # override the pacing cap and allow the full SNAP balance this trip
 
 
 class NutrientTargets(BaseModel):
@@ -90,6 +92,13 @@ class PlanItem(BaseModel):
     aisle: str
 
 
+class DaySchedule(BaseModel):
+    day: int                       # 1-based
+    breakfast: str | None          # meal id, "school", or None when nothing covers it
+    lunch: str | None
+    dinner: str | None
+
+
 class Plan(BaseModel):
     meals: dict[str, int]
     cart: list[PlanItem]
@@ -106,6 +115,19 @@ class Plan(BaseModel):
     shortfalls: dict[str, float]
     what_changed: str | None
     solve_ms: int
+    # pacing: how this trip sits against the balance that must last until the deposit
+    trip_snap_cap_cents: int = 0          # SNAP the solver was allowed to spend this trip
+    snap_remaining_after_cents: int = 0   # household.ebt_cents - ebt_cents
+    days_remaining_after: int = 0         # days from covers_until to the deposit; 0 without a date
+    on_pace: bool = True
+    projected_run_out_date: date | None = None
+    # the plan as a plan
+    schedule: list[DaySchedule] = []
+    leftovers: dict[str, int] = {}        # ingredient_id -> grams left after the trip (bought + pantry - used)
+    uncovered: dict[str, int] = {}        # slot -> servings the budget could not cover (empty when all covered)
+    relaxed: list[str] = []               # rules loosened to find a plan: "variety", "repeats", "slots"
+    staples_assumed: list[str] = []       # ingredient ids treated as already on hand
+    meal_serving_cents: dict[str, int] = {}  # meal_id -> ingredient cost per serving, pro-rated by weight from package prices
 
 
 def _to_bool(value: str, field: str, row_no: int) -> bool:

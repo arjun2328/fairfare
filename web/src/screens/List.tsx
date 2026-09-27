@@ -1,9 +1,11 @@
 import { useMemo, useState } from "react";
+import { RotateCcw } from "lucide-react";
 import PaymentCard from "../components/PaymentCard";
 import CartGroup from "../components/CartGroup";
+import { api } from "../api";
 import { useApp } from "../state";
 import { fmtMoney } from "../format";
-import type { PlanItem } from "../types";
+import type { Ingredient, PantryItem, PlanItem } from "../types";
 
 const AISLE_ORDER = ["produce", "dairy", "meat", "frozen", "dry", "canned", "bakery", "other"];
 
@@ -22,9 +24,39 @@ function basketTotals(cart: PlanItem[], checkedIds: Set<string>): { ebt: number;
   return { ebt, cash };
 }
 
+/** Leftover grams -> the pantry levels the Pantry screen understands. Grams are re-derived server-side. */
+function leftoversToItems(leftovers: Record<string, number>, ingredients: Record<string, Ingredient>): PantryItem[] {
+  const items: PantryItem[] = [];
+  for (const [id, grams] of Object.entries(leftovers)) {
+    const pack = ingredients[id]?.package_g ?? 0;
+    if (pack <= 0 || grams <= 0) continue;
+    const frac = grams / pack;
+    if (frac < 0.1) continue; // a spoonful left is not worth tracking
+    items.push({ ingredient_id: id, level: frac >= 0.75 ? "full" : frac >= 0.35 ? "half" : "low", source: "manual" });
+  }
+  return items;
+}
+
 export default function List() {
-  const { plan, prevPlan, household, ingredients, meals, solving, setHousehold, navigate } = useApp();
+  const { plan, prevPlan, household, ingredients, meals, solving, setHousehold, setPantryItems, navigate } = useApp();
   const [checkedIds, setCheckedIds] = useState<Set<string>>(() => new Set());
+  const [carrying, setCarrying] = useState<"idle" | "busy" | "error">("idle");
+
+  /** "Start next trip with what's left": leftovers become the pantry, then the plan re-solves. */
+  const startNextTrip = async () => {
+    if (!plan) return;
+    setCarrying("busy");
+    try {
+      const items = leftoversToItems(plan.leftovers, ingredients);
+      const grams = await api.pantryGrams(items);
+      setPantryItems(items);
+      setHousehold({ pantry: grams });
+      setCarrying("idle");
+      navigate("/plan");
+    } catch {
+      setCarrying("error");
+    }
+  };
 
   const toggleChecked = (id: string) => {
     setCheckedIds((prev) => {
@@ -70,6 +102,7 @@ export default function List() {
   const { ebt, cash } = basketTotals(plan.cart, checkedIds);
   const aisleKeys = [...AISLE_ORDER, ...Object.keys(groups).filter((a) => !AISLE_ORDER.includes(a))];
   const pantryEntries = Object.entries(plan.from_pantry);
+  const leftoverEntries = Object.entries(plan.leftovers).sort((a, b) => b[1] - a[1]);
   const planMealIds = Object.keys(plan.meals);
 
   return (
@@ -83,11 +116,11 @@ export default function List() {
 
       <div
         className="card-div"
-        style={{ position: "sticky", top: 0, zIndex: 5, justifyContent: "space-between", fontWeight: 600, fontSize: 14 }}
+        style={{ position: "sticky", top: 0, zIndex: 5, fontWeight: 600, fontSize: 14 }}
       >
-        <span>In basket</span>
         <span>
-          EBT {fmtMoney(ebt)} · Card {fmtMoney(cash)}
+          In basket · SNAP <span className="money-snap">{fmtMoney(ebt)}</span> · Card{" "}
+          <span className="money-cash">{fmtMoney(cash)}</span>
         </span>
       </div>
 
@@ -107,7 +140,7 @@ export default function List() {
         />
       ))}
 
-      {pantryEntries.length > 0 && (
+      {(pantryEntries.length > 0 || plan.staples_assumed.length > 0) && (
         <section>
           <h3 className="section-title section-title--sm">From your kitchen</h3>
           {pantryEntries.map(([id, grams]) => (
@@ -119,12 +152,37 @@ export default function List() {
               </div>
             </div>
           ))}
+          {plan.staples_assumed.length > 0 && (
+            <p className="disclaim">
+              Assumed you already have: {plan.staples_assumed.map((id) => ingredients[id]?.name ?? id).join(", ")}
+            </p>
+          )}
         </section>
       )}
 
       <button type="button" className="btn-primary" onClick={() => navigate("/register")}>
         Show the cashier
       </button>
+
+      {leftoverEntries.length > 0 && (
+        <section className="plancard" style={{ marginTop: 18 }} aria-label="Left after this trip">
+          <h3 className="section-title section-title--sm">Left after this trip</h3>
+          <p className="subnote" style={{ marginBottom: 6 }}>
+            Packages are bought whole, so some food carries over. Estimated amounts.
+          </p>
+          {leftoverEntries.map(([id, grams]) => (
+            <div key={id} className="payrow quiet">
+              <span>{ingredients[id]?.name ?? id}</span>
+              <span>about {grams} g</span>
+            </div>
+          ))}
+          <button type="button" className="btn-line" style={{ marginTop: 10 }} onClick={startNextTrip} disabled={carrying === "busy"}>
+            <RotateCcw className="ic" aria-hidden="true" />
+            Start next trip with what's left
+          </button>
+          {carrying === "error" && <p className="disclaim">Couldn't save that. Check the planner is reachable and try again.</p>}
+        </section>
+      )}
     </div>
   );
 }

@@ -1,4 +1,6 @@
+import { useState } from "react";
 import { fmtMoney } from "../format";
+import { useApp } from "../state";
 import type { Ingredient, Meal, PlanItem } from "../types";
 
 const AISLE_LABELS: Record<string, string> = {
@@ -38,7 +40,7 @@ export interface CartGroupProps {
   planMealIds: string[];
 }
 
-/** One aisle's worth of cart rows. Renders only from props; no fetching, no money math. */
+/** One aisle's worth of cart rows. Renders only from props (plus plan.leftovers via context); no fetching, no money math. */
 export default function CartGroup({
   aisle,
   items,
@@ -51,6 +53,8 @@ export default function CartGroup({
   meals,
   planMealIds,
 }: CartGroupProps) {
+  const { plan } = useApp();
+  const [expandedId, setExpandedId] = useState<string | null>(null);
   if (items.length === 0) return null;
   return (
     <section>
@@ -61,7 +65,10 @@ export default function CartGroup({
         const isOut = outOfStock.includes(item.ingredient_id);
         const isNew = swappedIn.has(item.ingredient_id);
         const inBasket = checkedIds.has(item.ingredient_id);
+        const expanded = expandedId === item.ingredient_id;
         const forMeals = mealNamesFor(item.ingredient_id, planMealIds, meals);
+        const leftoverG = plan?.leftovers[item.ingredient_id];
+        const moneyClass = item.ebt_eligible ? "money-snap" : "money-cash";
         return (
           <div key={item.ingredient_id} className={`ing${inBasket ? " have" : ""}`}>
             <div className="ing-top">
@@ -71,34 +78,46 @@ export default function CartGroup({
                 aria-label="In basket"
                 onClick={() => onToggleChecked(item.ingredient_id)}
               />
-              <span className="name">{ing?.kroger_product ?? name}</span>
-              <span className={`tag ${item.ebt_eligible ? "elig" : "unv"}`}>
-                {item.ebt_eligible ? "SNAP eligible" : "Card"}
-              </span>
-            </div>
-            <div className="ing-note">
-              <span className="tag cost">{fmtMoney(item.line_cents)}</span>
-              <span className="subnote">
-                {item.packages}× {ing?.package_g ?? 0} g
-              </span>
-              {isNew && <span className="tag nutri">Swapped in</span>}
-              {isOut && <span className="tag oos">Out of stock</span>}
-            </div>
-            {forMeals && (
-              <p className="subnote" style={{ marginLeft: 32 }}>
-                For {forMeals}
-              </p>
-            )}
-            <div className="ing-note">
               <button
                 type="button"
-                className="link"
-                style={{ fontSize: 13, minHeight: 32 }}
-                onClick={() => onToggleOutOfStock(item.ingredient_id)}
+                className="grow"
+                style={{ background: "none", border: "none", padding: 0, textAlign: "left", display: "flex", flexDirection: "column", gap: 4, minHeight: 44 }}
+                onClick={() => setExpandedId(expanded ? null : item.ingredient_id)}
+                aria-expanded={expanded}
               >
-                {isOut ? "Back in stock" : "Mark out of stock"}
+                <span className="row row--between" style={{ gap: 8 }}>
+                  <span className="name">{ing?.kroger_product ?? name}</span>
+                  <span className={`tag ${item.ebt_eligible ? "elig" : "unv"}`}>{item.ebt_eligible ? "SNAP" : "Card"}</span>
+                </span>
+                <span className="row" style={{ gap: 8 }}>
+                  <span className="subnote">
+                    {item.packages}× {ing?.package_g ?? 0} g · <span className={moneyClass}>{fmtMoney(item.line_cents)}</span>
+                  </span>
+                  {isOut && <span className="tag oos">Out of stock</span>}
+                </span>
               </button>
             </div>
+            {expanded && (
+              <div className="subpanel">
+                {forMeals && <p className="subnote">For: {forMeals}</p>}
+                {leftoverG !== undefined && (
+                  <p className="subnote">Left over after this trip: estimated {leftoverG} g</p>
+                )}
+                {isNew && (
+                  <p>
+                    <span className="tag cost">Swapped in</span>
+                  </p>
+                )}
+                <button
+                  type="button"
+                  className="link"
+                  style={{ fontSize: 13, minHeight: 32 }}
+                  onClick={() => onToggleOutOfStock(item.ingredient_id)}
+                >
+                  {isOut ? "Back in stock" : "Mark out of stock"}
+                </button>
+              </div>
+            )}
           </div>
         );
       })}

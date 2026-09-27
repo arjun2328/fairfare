@@ -48,8 +48,16 @@ def test_solve_snap_only_forces_zero_cash(client):
     assert r.json()["cash_cents"] == 0
 
 
-def test_solve_infeasible_returns_422(client):
+def test_solve_too_few_meals_relaxes_and_reports_uncovered(client):
     r = client.post("/solve", json=_body(accepted_meals=["veggie_scramble"]))
+    assert r.status_code == 200, r.text
+    plan = r.json()
+    assert plan["uncovered"]["lunch"] > 0 and plan["uncovered"]["dinner"] > 0
+    assert "slots" in plan["relaxed"]
+
+
+def test_solve_no_candidates_returns_422(client):
+    r = client.post("/solve", json=_body(accepted_meals=[]))
     assert r.status_code == 422
     assert "meals" in r.json()["detail"].lower()
 

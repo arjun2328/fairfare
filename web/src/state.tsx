@@ -96,6 +96,8 @@ export function StateProvider({ children }: { children: ReactNode }) {
   planRef.current = plan;
   const householdRef = useRef<Household | null>(household);
   householdRef.current = household;
+  const mealsRef = useRef<Record<string, Meal>>(meals);
+  mealsRef.current = meals;
   const solveSeq = useRef(0);
 
   // ---- router -------------------------------------------------------------------------------
@@ -150,6 +152,14 @@ export function StateProvider({ children }: { children: ReactNode }) {
       setPlan(next);
       setSolveError(null);
       setApiOk(true);
+      // The meal pool on the server may have changed since this page loaded (regenerated or restarted);
+      // if the plan names a meal we have never seen, refresh the pool so names and descriptions render.
+      if (Object.keys(next.meals).some((id) => !mealsRef.current[id])) {
+        api
+          .meals(sessionId)
+          .then((list) => setMeals(Object.fromEntries(list.map((m) => [m.id, m]))))
+          .catch(() => undefined);
+      }
     } catch (err) {
       if (seq !== solveSeq.current) return;
       if (err instanceof ApiError) setSolveError(err.detail);

@@ -1,3 +1,5 @@
+from datetime import date, timedelta
+
 from stretch.nutrition import targets_for
 from stretch.solve import solve
 from tests.fixtures import INGREDIENTS, MEALS, make_household
@@ -87,6 +89,57 @@ def test_servings_capped_near_need():
         assert need <= served <= need + max(m.servings for m in slot_meals), slot
 
 
+def test_pacing_cap_binds_when_deposit_is_far():
+    # $60 must last 34 days; a 7-day trip may only use 60 * 7 / 34 = $12.35 of it.
+    hh = make_household(ebt_cents=6000, cash_cents=0, deposit_date=date.today() + timedelta(days=34))
+    plan = _solve(hh)
+    assert plan is not None
+    assert plan.trip_snap_cap_cents == 6000 * 7 // 34 == 1235
+    assert plan.ebt_cents <= 1235
+    assert plan.on_pace
+    assert plan.days_remaining_after == 27
+    assert sum(plan.uncovered.values()) > 0 and "slots" in plan.relaxed  # $12 cannot cover 42 servings
+    assert plan.staples_assumed == ["vegetable_oil"]
+
+
+def test_use_more_snap_lifts_the_cap():
+    hh = make_household(ebt_cents=6000, cash_cents=2000, deposit_date=date.today() + timedelta(days=34),
+                        use_more_snap=True)
+    plan = _solve(hh)
+    assert plan.trip_snap_cap_cents == 6000
+    assert plan.uncovered == {} and plan.relaxed == []
+    assert not plan.on_pace
+    assert plan.projected_run_out_date is not None
+    assert plan.snap_remaining_after_cents == 6000 - plan.ebt_cents
+
+
+def test_cap_equals_balance_when_trip_matches_deposit():
+    hh = make_household(deposit_date=date.today() + timedelta(days=7))
+    plan = _solve(hh)
+    assert plan.trip_snap_cap_cents == hh.ebt_cents
+    assert plan.days_remaining_after == 0 and plan.on_pace
+
+
+def test_tiny_budget_returns_partial_plan_not_none():
+    plan = _solve(make_household(ebt_cents=500, cash_cents=0))
+    assert plan is not None
+    assert plan.ebt_cents <= 500
+    assert sum(plan.uncovered.values()) > 0
+    assert plan.relaxed
+
+
+def test_schedule_and_leftovers_are_consistent():
+    hh = make_household()
+    plan = _solve(hh)
+    assert len(plan.schedule) == hh.trip_days
+    for day in plan.schedule:
+        for mid in (day.breakfast, day.lunch, day.dinner):
+            assert mid in plan.meals, mid
+    cart_ids = {c.ingredient_id for c in plan.cart}
+    assert set(plan.leftovers) <= cart_ids
+    assert all(g > 0 for g in plan.leftovers.values())
+
+
 def test_staples_not_bought_when_assumed():
     hh = make_household(assume_staples=True)
     plan = _solve(hh)
@@ -96,3 +149,18 @@ def test_staples_not_bought_when_assumed():
         if ing.staple:
             assert used.get(c.ingredient_id, 0) > ing.package_g, "staple bought before pantry exhausted"
     assert "vegetable_oil" not in {c.ingredient_id for c in plan.cart}
+
+
+def test_meal_serving_cents_is_prorated_ingredient_cost():
+    hh = make_household()
+    plan = solve(MEALS, INGREDIENTS, hh, targets_for(hh))
+    assert plan is not None
+    assert set(plan.meal_serving_cents) == {m.id for m in MEALS}
+    for m in MEALS:
+        expected = round(sum(
+            g * INGREDIENTS[i].price_cents / INGREDIENTS[i].package_g
+            for i, g in m.ingredients.items()
+            if not (hh.assume_staples and INGREDIENTS[i].staple)
+        ) / max(1, m.servings))
+        assert plan.meal_serving_cents[m.id] == expected
+    assert any(v > 0 for v in plan.meal_serving_cents.values())

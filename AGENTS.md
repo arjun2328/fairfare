@@ -809,3 +809,22 @@ Only after Phases 1–4 are done and the demo is rehearsed.
 - Do not touch `app.py` except to keep it running.
 - Do not write a README, docs, or docstrings beyond one line per function. There is no time.
 - When unsure, ask one question; do not guess and build.
+
+---
+
+## Addenda (2026-09-26, agreed with the team during the build)
+
+Schema additions (all with defaults; `schemas.py` remains the source of truth):
+- `Meal.description: str = ""` — one plain sentence shown under the meal name.
+- `Household.use_more_snap: bool = False` — override the pacing cap and allow the full SNAP balance this trip.
+- `Plan` pacing fields: `trip_snap_cap_cents`, `snap_remaining_after_cents`, `days_remaining_after`, `on_pace`, `projected_run_out_date`.
+- `Plan.schedule: list[DaySchedule]` (`day`, `breakfast`, `lunch`, `dinner` = meal id, `"school"`, or `None`), assigned greedily after the solve.
+- `Plan.leftovers: dict[str, int]` — grams left per purchased ingredient after the trip.
+- `Plan.uncovered: dict[str, int]` and `Plan.relaxed: list[str]` — when the budget cannot cover every slot, the solver relaxes variety, then repeats, then slot coverage (in that order) and reports what it could not cover instead of failing. A 422 remains only when no meal fits the household at all.
+- `Plan.staples_assumed: list[str]` — the staples treated as on hand, so the UI can show the assumption.
+- `Plan.meal_serving_cents: dict[str, int]` — ingredient cost per serving for every meal in the pool, pro-rated by weight from package prices (display only; assumed staples count as free). Computed in `solve.py` so the frontend still never does money math.
+- Meal photos: `python -m stretch.images` generates one AI image per meal into `web/public/meals/<id>.jpg` through `llm.generate_image` (model from `LLM_IMAGE_MODEL`). The UI labels them as illustrations and falls back to a plain tile when a file is missing. Meals open in a detail sheet (photo, description, ingredients with SNAP/Card tags, cost per serving, "Not for me"); the meal chooser is a photo list with real-attribute filters (slot, quick, no-cook, microwave). No recipe feed, cookbook, ratings, stores or profile screens.
+
+Solver changes: per-trip SNAP cap `ebt_cents * trip_days // days_until_deposit` when a deposit date is set and is further away than the trip (unless `use_more_snap`); per-slot servings cap of `needed + one batch`.
+
+Frontend: two payment colours (`--color-snap`, `--color-cash`) are the only colours used for dollar figures; the Plan hero shows this trip's total spend and pace, then today's meals and the day-by-day week; secondary controls live behind "Adjust".

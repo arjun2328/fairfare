@@ -13,6 +13,8 @@
   --radius: 16px;
   --radius-pill: 999px;
   --tab-active: var(--green);
+  --color-snap: var(--green);
+  --color-cash: var(--berry);
   --font-display: "Fraunces", Georgia, "Times New Roman", serif;
   --font-body: "Karla", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
   color-scheme: light;
@@ -28,6 +30,8 @@
     --gold: #E3B45B;
     --line: #3A4234;
     --tab-active: var(--gold);
+    --color-snap: var(--green);
+    --color-cash: var(--berry);
     color-scheme: dark;
   }
 }

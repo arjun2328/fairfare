@@ -122,17 +122,20 @@ def post_solve(req: SolveRequest) -> Plan:
     pool = _pool(req.session_id)
     plan = solve.solve(pool, INGREDIENTS, hh, targets, time_limit_s=2.0)
     if plan is None:
-        cand = solve._candidates(pool, INGREDIENTS, hh)
-        if not cand:
-            detail = "No meals fit your kitchen setup and food rules yet. Allow another way to cook or remove a restriction."
-        elif hh.accepted_meals is not None:
+        # The solver relaxes variety, repeats and coverage before giving up, so this only happens
+        # when nothing in the pool fits the household at all.
+        if hh.accepted_meals is not None:
             detail = "Not enough meals left to cover every day. Pick a few more."
         else:
-            detail = "Couldn't cover every day within this budget. Add a little cash, shorten the trip, or allow more meals."
-        print(f"solve infeasible: candidates={len(cand)} people={hh.people} days={hh.trip_days} "
-              f"ebt={hh.ebt_cents} cash={hh.cash_cents} equipment={hh.equipment} diet={hh.diet} "
-              f"excluded_ingredients={len(hh.excluded_ingredients)} excluded_meals={len(hh.excluded_meals)}", flush=True)
+            detail = "No meals fit your kitchen setup and food rules yet. Allow another way to cook or remove a restriction."
+        print(f"solve: no candidates for people={hh.people} days={hh.trip_days} equipment={hh.equipment} "
+              f"diet={hh.diet} excluded_ingredients={len(hh.excluded_ingredients)} accepted={hh.accepted_meals}", flush=True)
         raise HTTPException(422, detail=detail)
+
+    print(f"solve: people={hh.people} days={hh.trip_days} ebt={hh.ebt_cents} cash={hh.cash_cents} "
+          f"deposit={hh.deposit_date} equip={hh.equipment} prep={hh.max_prep_min} diet={hh.diet} "
+          f"excluded_meals={len(hh.excluded_meals)} accepted={None if hh.accepted_meals is None else len(hh.accepted_meals)} "
+          f"-> basket={plan.basket_cents} relaxed={plan.relaxed} uncovered={plan.uncovered} meals={plan.meals}", flush=True)
 
     if req.prev_plan is not None:
         try:

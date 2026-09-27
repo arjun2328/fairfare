@@ -107,3 +107,23 @@ def complete(messages: list[dict],
         calls.append({"id": tc.id, "name": tc.function.name, "arguments": args})
 
     return {"text": _strip_fences(choice.content), "tool_calls": calls, "raw": resp}
+
+
+def generate_image(prompt: str, size: str = "1024x1024", quality: str = "medium") -> bytes:
+    """One image from the configured provider (gpt-image family, model from LLM_IMAGE_MODEL); returns JPEG bytes."""
+    image_key = os.getenv("LLM_IMAGE_API_KEY") or LLM_API_KEY
+    if not image_key:
+        raise RuntimeError("Images are not configured: set LLM_IMAGE_API_KEY (a key with the Images permission) in .env")
+    client = _client if (image_key == LLM_API_KEY and _client is not None) else OpenAI(base_url=LLM_BASE_URL, api_key=image_key)
+    model = os.getenv("LLM_IMAGE_MODEL") or "gpt-image-1-mini"
+    resp = None
+    for attempt in range(2):
+        try:
+            resp = client.images.generate(model=model, prompt=prompt, size=size, quality=quality,
+                                          output_format="jpeg", n=1)
+            break
+        except Exception:  # network or 5xx; retry exactly once
+            if attempt == 1:
+                raise
+            time.sleep(1.0)
+    return base64.b64decode(resp.data[0].b64_json)

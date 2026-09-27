@@ -35,6 +35,14 @@ export interface Meal {
   equipment: Equipment[];
   palatability: number;
   ingredients: Record<string, number>;
+  description: string; // one plain sentence shown under the name ("" when absent)
+}
+
+export interface DaySchedule {
+  day: number; // 1-based
+  breakfast: string | null; // meal id, "school", or null when nothing covers it
+  lunch: string | null;
+  dinner: string | null;
 }
 
 export interface PantryItem {
@@ -61,6 +69,7 @@ export interface Household {
   out_of_stock: string[];
   pantry: Record<string, number>;
   assume_staples: boolean;
+  use_more_snap: boolean; // override the pacing cap: allow the full SNAP balance this trip
 }
 
 export interface NutrientTargets {
@@ -95,6 +104,19 @@ export interface Plan {
   shortfalls: Record<string, number>;
   what_changed: string | null;
   solve_ms: number;
+  // pacing against the balance that must last until the deposit
+  trip_snap_cap_cents: number;
+  snap_remaining_after_cents: number;
+  days_remaining_after: number;
+  on_pace: boolean;
+  projected_run_out_date: string | null;
+  // the plan as a plan
+  schedule: DaySchedule[];
+  leftovers: Record<string, number>; // ingredient_id -> grams left after the trip
+  uncovered: Record<string, number>; // slot -> servings the budget could not cover ({} when all covered)
+  relaxed: string[]; // "variety" | "repeats" | "slots" rules loosened to find a plan
+  staples_assumed: string[]; // ingredient ids treated as already on hand
+  meal_serving_cents: Record<string, number>; // meal_id -> ingredient cost per serving, pro-rated by weight from package prices
 }
 
 export interface AgentTurn {
@@ -121,4 +143,5 @@ export const DEFAULT_HOUSEHOLD: Household = {
   out_of_stock: [],
   pantry: {},
   assume_staples: true,
+  use_more_snap: false,
 };

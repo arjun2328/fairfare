@@ -15,8 +15,15 @@ const FULLSCREEN_STYLE: CSSProperties = {
   paddingRight: "calc(16px + env(safe-area-inset-right, 0px))",
 };
 
+const BACK_BTN_STYLE: CSSProperties = {
+  background: "transparent",
+  borderColor: "rgba(255,255,255,0.5)",
+  color: "#fff",
+  marginTop: 12,
+};
+
 export default function Register() {
-  const { plan, navigate } = useApp();
+  const { plan, ingredients, navigate } = useApp();
 
   // Keep the screen awake while showing the cashier; fail silently where unsupported.
   useEffect(() => {
@@ -56,6 +63,27 @@ export default function Register() {
     );
   }
 
+  const printOrShare = async () => {
+    const lines = plan.cart.map((item) => {
+      const product = ingredients[item.ingredient_id]?.kroger_product ?? item.ingredient_id;
+      return `${item.packages}× ${product} — ${fmtMoney(item.line_cents)}`;
+    });
+    const summary = [
+      `Swipe EBT first ${fmtMoney(plan.ebt_cents)}.`,
+      plan.cash_cents > 0 ? `Then card ${fmtMoney(plan.cash_cents)}.` : "That's everything.",
+      ...lines,
+    ].join("\n");
+    if (navigator.share) {
+      try {
+        await navigator.share({ text: summary });
+      } catch {
+        /* share cancelled or unavailable; ignore */
+      }
+    } else {
+      window.print();
+    }
+  };
+
   return (
     <div style={FULLSCREEN_STYLE}>
       <div className="stack">
@@ -70,7 +98,9 @@ export default function Register() {
         </button>
 
         <div className="stack" style={{ marginTop: 24 }}>
-          <p style={{ fontSize: 15, opacity: 0.85 }}>Swipe EBT first</p>
+          <p style={{ fontSize: 15, opacity: 0.85 }}>
+            Swipe <span className="money-pill money-snap">EBT</span> first
+          </p>
           <p style={{ fontFamily: "var(--font-display)", fontWeight: 600, fontSize: 60, lineHeight: 1.05, color: "#fff", margin: 0 }}>
             {fmtMoney(plan.ebt_cents)}
           </p>
@@ -78,7 +108,9 @@ export default function Register() {
 
         {plan.cash_cents > 0 ? (
           <div className="stack" style={{ marginTop: 32 }}>
-            <p style={{ fontSize: 15, opacity: 0.85 }}>Then card</p>
+            <p style={{ fontSize: 15, opacity: 0.85 }}>
+              Then <span className="money-pill money-cash">card</span>
+            </p>
             <p style={{ fontFamily: "var(--font-display)", fontWeight: 600, fontSize: 60, lineHeight: 1.05, color: "#fff", margin: 0 }}>
               {fmtMoney(plan.cash_cents)}
             </p>
@@ -89,16 +121,28 @@ export default function Register() {
           </p>
         )}
 
+        {plan.cart.length > 0 && (
+          <ul className="stack stack--tight" style={{ marginTop: 28, fontSize: 13, opacity: 0.9 }}>
+            {plan.cart.map((item) => {
+              const product = ingredients[item.ingredient_id]?.kroger_product ?? item.ingredient_id;
+              return (
+                <li key={item.ingredient_id}>
+                  {item.packages}× {product} —{" "}
+                  <span className={item.ebt_eligible ? "money-pill money-snap" : "money-pill money-cash"}>{fmtMoney(item.line_cents)}</span>
+                </li>
+              );
+            })}
+          </ul>
+        )}
+
         <p className="small" style={{ marginTop: 40, color: "rgba(255,255,255,0.85)" }}>
           Entered manually — not connected to your EBT account.
         </p>
 
-        <button
-          type="button"
-          className="btn-line"
-          style={{ background: "transparent", borderColor: "rgba(255,255,255,0.5)", color: "#fff", marginTop: 12 }}
-          onClick={() => navigate("/list")}
-        >
+        <button type="button" className="btn-line" style={BACK_BTN_STYLE} onClick={printOrShare}>
+          Print or share
+        </button>
+        <button type="button" className="btn-line" style={BACK_BTN_STYLE} onClick={() => navigate("/list")}>
           Back to list.
         </button>
       </div>
