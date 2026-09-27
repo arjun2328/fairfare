@@ -168,7 +168,13 @@ export default function Recipes() {
                   meal={meal}
                   servingCents={f?.serving_cents}
                   times={inTrip ? plan?.meals[meal.id] : undefined}
-                  tag={factTag(f)}
+                  tag={
+                    meal.equipment.some((e) => !(household?.equipment ?? []).includes(e))
+                      ? `Needs ${meal.equipment.filter((e) => !(household?.equipment ?? []).includes(e)).join(" + ")}`
+                      : meal.prep_min > (household?.max_prep_min ?? 999)
+                        ? `${meal.prep_min} min, over your limit`
+                        : factTag(f)
+                  }
                   favorite={favorites.has(meal.id)}
                   inTrip={inTrip}
                   pinnedNotFit={!solving && (plan?.relaxed ?? []).includes("pins") && (household?.required_meals ?? []).includes(meal.id) && !inTrip}

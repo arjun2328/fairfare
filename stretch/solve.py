@@ -167,6 +167,8 @@ def solve(meals: list[Meal],
     out_of_stock = set(household.out_of_stock)
 
     required = [m.id for m in cand if m.id in set(household.required_meals)]
+    # A pinned meal the kitchen setup or time limit rules out is reported as a dropped pin too.
+    pins_not_candidates = [m for m in household.required_meals if m not in by_id]
     favorites = set(household.favorite_meals)
 
     # ---- model, built per attempt so rules can be relaxed in order ----
@@ -370,7 +372,7 @@ def solve(meals: list[Meal],
                            {"breakfast": school_b > 0, "lunch": school_l > 0, "dinner": False}),
         leftovers=leftovers,
         uncovered=uncovered,
-        relaxed=list(relaxed),
+        relaxed=list(relaxed) + (["pins"] if pins_not_candidates and "pins" not in relaxed else []),
         staples_assumed=staples_assumed,
         meal_serving_cents=meal_serving_cents,
         meal_cost_cents={mid: meal_serving_cents.get(mid, 0) * by_id[mid].servings * n for mid, n in chosen.items()},

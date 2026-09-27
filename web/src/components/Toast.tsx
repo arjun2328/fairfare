@@ -26,9 +26,17 @@ export default function Toast() {
       const droppedAll = (household?.required_meals ?? []).filter((id) => !(plan.meals[id] > 0));
       const dropped = droppedAll[droppedAll.length - 1];
       if (dropped) {
-        const name = meals[dropped]?.name ?? "That recipe";
+        const m = meals[dropped];
+        const name = m?.name ?? "That recipe";
         const more = droppedAll.length > 1 ? ` ${droppedAll.length - 1} other added recipe${droppedAll.length > 2 ? "s" : ""} also didn't fit.` : "";
-        text = `${name} didn't fit this trip's ${fmtMoney(plan.trip_snap_cap_cents)}. Raise your balance or remove a meal.${more}`;
+        const missingEq = m ? m.equipment.filter((e) => !(household?.equipment ?? []).includes(e)) : [];
+        if (missingEq.length > 0) {
+          text = `${name} needs ${missingEq.join(" and ")}. Add it under Kitchen setup in Profile.${more}`;
+        } else if (m && household && m.prep_min > household.max_prep_min) {
+          text = `${name} takes ${m.prep_min} minutes, over your ${household.max_prep_min}-minute limit. Raise it in Profile.${more}`;
+        } else {
+          text = `${name} didn't fit this trip's ${fmtMoney(plan.trip_snap_cap_cents)}. Raise your balance or remove a meal.${more}`;
+        }
       }
     }
     if (!text || (!prevPlan && !plan.relaxed.includes("pins"))) return;
