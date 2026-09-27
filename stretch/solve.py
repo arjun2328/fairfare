@@ -1,4 +1,5 @@
 import math
+import os
 import time
 from datetime import date, timedelta
 
@@ -265,7 +266,7 @@ def solve(meals: list[Meal],
 
         solver = cp_model.CpSolver()
         solver.parameters.max_time_in_seconds = limit
-        solver.parameters.num_workers = 8
+        solver.parameters.num_workers = int(os.getenv("SOLVER_WORKERS", "8"))  # fewer on a small cloud CPU
         status = solver.Solve(model)
         if status not in (cp_model.OPTIMAL, cp_model.FEASIBLE):
             return None, None, None, None, status
