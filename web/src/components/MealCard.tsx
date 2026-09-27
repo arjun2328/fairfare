@@ -1,4 +1,4 @@
-import { Check, Heart, Plus } from "lucide-react";
+import { AlertCircle, Check, Heart, Plus } from "lucide-react";
 import { fmtMoney } from "../format";
 import type { Meal } from "../types";
 import MealPhoto from "./MealPhoto";
@@ -15,6 +15,7 @@ export default function MealCard({
   onToggleFavorite,
   onAdd,
   onRemove,
+  pinnedNotFit,
   loading,
 }: {
   meal: Meal;
@@ -23,15 +24,17 @@ export default function MealCard({
   tag?: string;
   favorite?: boolean;
   inTrip?: boolean;
+  pinnedNotFit?: boolean;
   onOpen: () => void;
   onToggleFavorite?: () => void;
   onAdd?: () => void;
   onRemove?: () => void;
   loading?: boolean;
 }) {
-  const showAdd = !!onAdd && !inTrip;
+  const showNoFit = !!pinnedNotFit && !inTrip && !!onRemove;
+  const showAdd = !!onAdd && !inTrip && !showNoFit;
   const showAdded = !!inTrip && !!onRemove;
-  const hasActions = !!onToggleFavorite || showAdd || showAdded;
+  const hasActions = !!onToggleFavorite || showAdd || showAdded || showNoFit;
   const cls = `meal-card${hasActions ? "" : " meal-card--plain"}${loading ? " loading" : ""}`;
 
   return (
@@ -79,6 +82,23 @@ export default function MealCard({
               <span className="meal-card__pill">
                 <Plus className="ic" aria-hidden="true" />
                 Add
+              </span>
+            </button>
+          )}
+
+          {showNoFit && (
+            <button
+              type="button"
+              className="meal-card__pillbtn"
+              aria-label="Added, but it did not fit this trip's budget. Tap to remove."
+              onClick={(e) => {
+                e.stopPropagation();
+                onRemove?.();
+              }}
+            >
+              <span className="meal-card__pill meal-card__pill--nofit">
+                <AlertCircle className="ic" aria-hidden="true" />
+                Didn't fit
               </span>
             </button>
           )}

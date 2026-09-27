@@ -170,6 +170,7 @@ export default function Recipes() {
                   tag={factTag(f)}
                   favorite={favorites.has(meal.id)}
                   inTrip={inTrip}
+                  pinnedNotFit={(household?.required_meals ?? []).includes(meal.id) && !inTrip}
                   onOpen={() => setOpenMeal(meal)}
                   onToggleFavorite={() => toggleFavorite(meal.id)}
                   onAdd={() => pinMeal(meal.id)}

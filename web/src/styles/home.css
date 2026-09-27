@@ -82,3 +82,5 @@
 .cook-empty__icon { width: 32px; height: 32px; color: var(--berry); margin-bottom: 4px; }
 .cook-empty .btn-line { margin-top: 10px; }
 .cook-foot { margin-top: 16px; }
+
+.meal-card__pill--nofit { background: color-mix(in srgb, var(--berry) 14%, transparent); color: var(--berry); }
