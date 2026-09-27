@@ -108,7 +108,10 @@ export default function List() {
   return (
     <div className="screen">
       <div className="topbar screen-head screen-head--list">
-        <h2>Shopping list</h2>
+        <div className="topbar__text">
+          <h2>Shopping list</h2>
+          <p className="subnote">Everything your plan needs, nothing extra. Tick items as they go in your basket.</p>
+        </div>
       </div>
 
       <PaymentCard plan={plan} household={household} loading={solving} />
@@ -142,32 +145,30 @@ export default function List() {
       ))}
       </div>
 
-      {(pantryEntries.length > 0 || plan.staples_assumed.length > 0) && (
-        <section>
+      {pantryEntries.length > 0 && (
+        <section style={{ marginTop: 26 }}>
           <h3 className="section-title section-title--sm">From your kitchen</h3>
+          <p className="subnote" style={{ marginBottom: 4 }}>
+            Not on the list because you already have them. Amounts are what the meals use, estimated.
+          </p>
           {pantryEntries.map(([id, grams]) => (
             <div key={id} className="ing have">
               <div className="ing-top">
                 <span className="dot" aria-hidden="true" />
                 <span className="name">{ingredients[id]?.name ?? id}</span>
-                <span className="subnote">estimated {grams} g</span>
+                <span className="subnote">about {grams} g</span>
               </div>
             </div>
           ))}
-          {plan.staples_assumed.length > 0 && (
-            <p className="disclaim">
-              Assumed you already have: {plan.staples_assumed.map((id) => ingredients[id]?.name ?? id).join(", ")}
-            </p>
-          )}
         </section>
       )}
 
-      <button type="button" className="btn-primary" onClick={() => navigate("/register")}>
+      <button type="button" className="btn-primary" style={{ marginTop: 26 }} onClick={() => navigate("/register")}>
         Show the cashier
       </button>
 
       {leftoverEntries.length > 0 && (
-        <section className="plancard" style={{ marginTop: 18 }} aria-label="Left after this trip">
+        <section className="plancard" style={{ marginTop: 26 }} aria-label="Left after this trip">
           <h3 className="section-title section-title--sm">Left after this trip</h3>
           <p className="subnote" style={{ marginBottom: 6 }}>
             Packages are bought whole, so some food carries over. Estimated amounts.
