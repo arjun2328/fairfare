@@ -199,7 +199,7 @@ export default function Quiz() {
               </QuizOption>
             ))}
           </div>
-          <div className="stack stack--tight">
+          <div className="stack stack--tight quiz-follow">
             <p className="small strong">Kids getting school meals</p>
             <QuizStepper
               label="School breakfast"

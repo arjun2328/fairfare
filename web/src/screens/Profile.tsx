@@ -59,7 +59,7 @@ export default function Profile() {
 
   return (
     <div className="screen">
-      <div className="topbar">
+      <div className="topbar screen-head screen-head--profile">
         <div className="row profile-topbar">
           <button type="button" className="quiz-back profile-back" aria-label="Back to plan" onClick={() => navigate("/plan")}>
             <ChevronLeft className="ic" aria-hidden="true" />

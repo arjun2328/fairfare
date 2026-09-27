@@ -35,7 +35,7 @@ export default function Cookbook() {
 
   return (
     <div className="screen">
-      <div className="topbar">
+      <div className="topbar screen-head screen-head--cookbook">
         <h2>My cookbook</h2>
         <TopActions />
       </div>

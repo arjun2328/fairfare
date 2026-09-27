@@ -107,12 +107,12 @@ export default function List() {
 
   return (
     <div className="screen">
-      <div className="topbar">
+      <div className="topbar screen-head screen-head--list">
         <h2>Shopping list</h2>
       </div>
 
       <PaymentCard plan={plan} household={household} loading={solving} />
-      <p className="disclaim">SNAP can't cover delivery fees or tips if you order for delivery.</p>
+      <p className="disclaim" style={{ margin: "0 0 16px" }}>SNAP can't cover delivery fees or tips if you order for delivery.</p>
 
       <div
         className="card-div"
@@ -124,6 +124,7 @@ export default function List() {
         </span>
       </div>
 
+      <div className="stack" style={{ gap: 18, marginTop: 6 }}>
       {aisleKeys.map((aisle) => (
         <CartGroup
           key={aisle}
@@ -139,6 +140,7 @@ export default function List() {
           planMealIds={planMealIds}
         />
       ))}
+      </div>
 
       {(pantryEntries.length > 0 || plan.staples_assumed.length > 0) && (
         <section>

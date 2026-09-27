@@ -166,7 +166,7 @@ export default function Pantry() {
 
   return (
     <div className="screen pantry">
-      <div className="topbar">
+      <div className="topbar screen-head screen-head--pantry">
         <h2>Your pantry</h2>
         <TopActions />
       </div>
