@@ -57,10 +57,7 @@ def detect_from_image(image: bytes, ingredients: dict[str, Ingredient]) -> list[
         f"{_ingredient_lines(ingredients)}"
     )
     reply = llm.complete([{"role": "user", "content": prompt}], json_only=True, images=[image], temperature=0.2)
-    items = _parse(reply["text"], ingredients, "photo")
-    if not items:  # debugging aid for the demo build: see what the model said when nothing matched
-        print(f"pantry: photo matched nothing; model said: {(reply['text'] or '')[:300]!r}", flush=True)
-    return items
+    return _parse(reply["text"], ingredients, "photo")
 
 
 def detect_from_text(text: str, ingredients: dict[str, Ingredient]) -> list[PantryItem]:

@@ -156,11 +156,6 @@ def post_solve(req: SolveRequest) -> Plan:
               f"diet={hh.diet} excluded_ingredients={len(hh.excluded_ingredients)} accepted={hh.accepted_meals}", flush=True)
         raise HTTPException(422, detail=detail)
 
-    print(f"solve: people={hh.people} days={hh.trip_days} ebt={hh.ebt_cents} cash={hh.cash_cents} "
-          f"deposit={hh.deposit_date} equip={hh.equipment} prep={hh.max_prep_min} diet={hh.diet} "
-          f"excluded_meals={len(hh.excluded_meals)} accepted={None if hh.accepted_meals is None else len(hh.accepted_meals)} "
-          f"-> basket={plan.basket_cents} relaxed={plan.relaxed} uncovered={plan.uncovered} meals={plan.meals}", flush=True)
-
     if req.prev_plan is not None:
         try:
             plan.what_changed = explain.explain(req.prev_plan, plan, {m.id: m for m in pool}, INGREDIENTS)
@@ -182,9 +177,7 @@ def post_pantry_detect(req: DetectRequest) -> list[PantryItem]:
             image = base64.b64decode(req.image_b64.split(",", 1)[-1], validate=False)
         except Exception:
             raise HTTPException(422, detail="image_b64 is not valid base64.")
-        items = pantry.detect_from_image(image, INGREDIENTS)
-        print(f"pantry: photo {len(image)} bytes -> {len(items)} items {[i.ingredient_id for i in items]}", flush=True)
-        return items
+        return pantry.detect_from_image(image, INGREDIENTS)
     return pantry.detect_from_text(req.text, INGREDIENTS)
 
 
