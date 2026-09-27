@@ -4,7 +4,7 @@ from datetime import date, timedelta
 
 from ortools.sat.python import cp_model
 
-from .schemas import DaySchedule, Household, Ingredient, Meal, NutrientTargets, Plan, PlanItem
+from .schemas import DaySchedule, Household, Ingredient, Meal, MealFacts, NutrientTargets, Plan, PlanItem
 
 NUTRIENTS = ("kcal", "protein", "fiber", "sodium", "sugar")
 _PER_100G = {
@@ -74,6 +74,48 @@ def _schedule(chosen: dict[str, int], by_id: dict[str, Meal], D: int, people: in
     ]
 
 
+def _serving_cents(m: Meal, ingredients: dict[str, Ingredient], assume_staples: bool = True) -> int:
+    """Ingredient cost per serving, pro-rated by weight from package prices; assumed staples are free."""
+    total = sum(g * ingredients[i].price_cents / ingredients[i].package_g
+                for i, g in m.ingredients.items()
+                if not (assume_staples and ingredients[i].staple))
+    return round(total / max(1, m.servings))
+
+
+def meal_facts(meals: list[Meal], ingredients: dict[str, Ingredient],
+               assume_staples: bool = True) -> dict[str, MealFacts]:
+    """Per-serving cost, nutrition and factual tags for every meal in the pool (display only)."""
+    valid = [m for m in meals if all(i in ingredients for i in m.ingredients)]
+    costs = {m.id: _serving_cents(m, ingredients, assume_staples) for m in valid}
+    ranked = sorted(costs.values())
+    budget_cut = ranked[max(0, len(ranked) // 3 - 1)] if ranked else 0  # cheapest third of the pool
+    facts: dict[str, MealFacts] = {}
+    for m in valid:
+        per = {n: sum(g * getattr(ingredients[i], _PER_100G[n]) / 100 for i, g in m.ingredients.items())
+               / max(1, m.servings) for n in NUTRIENTS}
+        cash = [i for i in m.ingredients if not ingredients[i].ebt_eligible]
+        tags: list[str] = []
+        if m.prep_min <= 15:
+            tags.append("quick")
+        if not m.equipment:
+            tags.append("no-cook")
+        if "microwave" in m.equipment:
+            tags.append("microwave")
+        if "oven" in m.equipment:
+            tags.append("oven")
+        if costs[m.id] <= budget_cut:
+            tags.append("budget")
+        if per["protein"] >= 20:  # a meal-sized bar: 40% of the daily value in one serving
+            tags.append("high-protein")
+        if per["fiber"] >= 8:
+            tags.append("high-fiber")
+        facts[m.id] = MealFacts(meal_id=m.id, serving_cents=costs[m.id], kcal=round(per["kcal"]),
+                                protein_g=round(per["protein"]), fiber_g=round(per["fiber"]),
+                                sodium_mg=round(per["sodium"]), snap_eligible=not cash,
+                                cash_ingredients=cash, tags=tags)
+    return facts
+
+
 def solve(meals: list[Meal],
           ingredients: dict[str, Ingredient],
           household: Household,
@@ -123,9 +165,11 @@ def solve(meals: list[Meal],
     base_distinct = min(max(3, round(8 * D / 7)), len(cand))
     out_of_stock = set(household.out_of_stock)
 
+    required = [m.id for m in cand if m.id in set(household.required_meals)]
+
     # ---- model, built per attempt so rules can be relaxed in order ----
     def attempt(min_distinct: int, max_repeat: int, soft_slots: bool, limit: float,
-                variety_bonus: int = 0, max_uncovered: int | None = None):
+                variety_bonus: int = 0, max_uncovered: int | None = None, pins: bool = True):
         model = cp_model.CpModel()
         x = {m.id: model.NewIntVar(0, D, f"x_{m.id}") for m in cand}
         used = {m.id: model.NewBoolVar(f"u_{m.id}") for m in cand}
@@ -138,6 +182,9 @@ def solve(meals: list[Meal],
             model.Add(x[m.id] <= max_repeat)
         if min_distinct > 0:
             model.Add(sum(used.values()) >= min_distinct)
+        if pins:
+            for mid in required:  # meals the user pinned: cook each at least once
+                model.Add(x[mid] >= 1)
 
         for slot, need in needed.items():
             slot_meals = [m for m in cand if m.slot == slot]
@@ -209,19 +256,27 @@ def solve(meals: list[Meal],
         return solver, x, y, uncovered, status
 
     half = max(0.5, time_limit_s / 2)
+    # (rules relaxed, min distinct, max repeat, soft slots, time limit, variety bonus, keep pins)
     stages = [
-        ([], base_distinct, base_repeat, False, time_limit_s, 0),
-        (["variety"], 1, base_repeat, False, half, VARIETY_BONUS),
-        (["variety", "repeats"], 1, D, False, half, VARIETY_BONUS),
-        (["variety", "repeats", "slots"], 0, D, True, half, VARIETY_BONUS),
+        ([], base_distinct, base_repeat, False, time_limit_s, 0, True),
+        (["variety"], 1, base_repeat, False, half, VARIETY_BONUS, True),
+        (["variety", "repeats"], 1, D, False, half, VARIETY_BONUS, True),
     ]
+    if required:
+        # A pinned meal the budget cannot hold is dropped before any slot goes uncovered (food first).
+        stages.append((["variety", "repeats", "pins"], 1, D, False, half, VARIETY_BONUS, False))
+    stages.append((["variety", "repeats", "slots"], 0, D, True, half, VARIETY_BONUS, True))
+    if required:
+        stages.append((["variety", "repeats", "pins", "slots"], 0, D, True, half, VARIETY_BONUS, False))
     solver = x = y = uncovered_vars = None
     relaxed: list[str] = []
-    for relaxed, min_distinct, max_repeat, soft, limit, bonus in stages:
-        solver, x, y, uncovered_vars, status = attempt(min_distinct, max_repeat, soft, limit, bonus)
+    pins_kept = True
+    for relaxed, min_distinct, max_repeat, soft, limit, bonus, pins_kept in stages:
+        solver, x, y, uncovered_vars, status = attempt(min_distinct, max_repeat, soft, limit, bonus, pins=pins_kept)
         if solver is None and status == cp_model.UNKNOWN:
             # Out of time with no proof either way (busy machine): retry once before relaxing a rule.
-            solver, x, y, uncovered_vars, status = attempt(min_distinct, max_repeat, soft, limit * 1.5, bonus)
+            solver, x, y, uncovered_vars, status = attempt(min_distinct, max_repeat, soft, limit * 1.5, bonus,
+                                                          pins=pins_kept)
         if solver is not None:
             break
     if solver is None:
@@ -229,10 +284,10 @@ def solve(meals: list[Meal],
     if "slots" in relaxed and uncovered_vars:
         # Food first, variety second: keep the coverage just found, then retry without the long repeats.
         best_uncovered = sum(solver.Value(v) for v in uncovered_vars.values())
-        again = attempt(0, base_repeat, True, half, VARIETY_BONUS, best_uncovered)
+        again = attempt(0, base_repeat, True, half, VARIETY_BONUS, best_uncovered, pins=pins_kept)
         if again[0] is not None:
             solver, x, y, uncovered_vars, _ = again
-            relaxed = ["variety", "slots"]
+            relaxed = [r for r in relaxed if r != "repeats"]
 
     # ---- output; every display number is computed here ----
     chosen = {m.id: solver.Value(x[m.id]) for m in cand if solver.Value(x[m.id]) > 0}
@@ -283,16 +338,9 @@ def solve(meals: list[Meal],
         if not on_pace and ebt_cents > 0:
             projected = today + timedelta(days=household.ebt_cents * D // ebt_cents)
 
-    # Ingredient cost per serving for every meal in the pool, pro-rated by weight from package prices.
-    # Display only (the basket buys whole packages); basics assumed on hand count as free.
-    meal_serving_cents: dict[str, int] = {}
-    for m in meals:
-        if any(i not in ingredients for i in m.ingredients):
-            continue
-        total = sum(g * ingredients[i].price_cents / ingredients[i].package_g
-                    for i, g in m.ingredients.items()
-                    if not (household.assume_staples and ingredients[i].staple))
-        meal_serving_cents[m.id] = round(total / max(1, m.servings))
+    # Ingredient cost per serving for every meal in the pool (display only; see _serving_cents).
+    meal_serving_cents = {m.id: _serving_cents(m, ingredients, household.assume_staples)
+                          for m in meals if all(i in ingredients for i in m.ingredients)}
 
     return Plan(
         meals=chosen,
@@ -322,4 +370,5 @@ def solve(meals: list[Meal],
         relaxed=list(relaxed),
         staples_assumed=staples_assumed,
         meal_serving_cents=meal_serving_cents,
+        meal_cost_cents={mid: meal_serving_cents.get(mid, 0) * by_id[mid].servings * n for mid, n in chosen.items()},
     )

@@ -45,6 +45,19 @@ export interface DaySchedule {
   dinner: string | null;
 }
 
+/** Per-meal facts computed server-side from real ingredient data; one per meal in the pool. */
+export interface MealFacts {
+  meal_id: string;
+  serving_cents: number; // ingredient cost per serving, pro-rated by weight (assumed staples free)
+  kcal: number; // per serving
+  protein_g: number;
+  fiber_g: number;
+  sodium_mg: number;
+  snap_eligible: boolean; // every ingredient is EBT-eligible
+  cash_ingredients: string[]; // ingredient ids that must be paid with cash/card
+  tags: string[]; // "quick" | "no-cook" | "microwave" | "oven" | "budget" | "high-protein" | "high-fiber"
+}
+
 export interface PantryItem {
   ingredient_id: string;
   level: PantryLevel;
@@ -66,6 +79,7 @@ export interface Household {
   excluded_ingredients: string[];
   excluded_meals: string[];
   accepted_meals: string[] | null;
+  required_meals: string[]; // meals the user pinned: the solver cooks each at least once if it can
   out_of_stock: string[];
   pantry: Record<string, number>;
   assume_staples: boolean;
@@ -117,6 +131,7 @@ export interface Plan {
   relaxed: string[]; // "variety" | "repeats" | "slots" rules loosened to find a plan
   staples_assumed: string[]; // ingredient ids treated as already on hand
   meal_serving_cents: Record<string, number>; // meal_id -> ingredient cost per serving, pro-rated by weight from package prices
+  meal_cost_cents: Record<string, number>; // chosen meal_id -> approximate ingredient cost for all batches this trip
 }
 
 export interface AgentTurn {
@@ -131,7 +146,7 @@ export const DEFAULT_HOUSEHOLD: Household = {
   deposit_date: null,
   school_breakfasts: 0,
   school_lunches: 0,
-  ebt_cents: 15000,
+  ebt_cents: 30000,
   cash_cents: 2000,
   snap_only: false,
   max_prep_min: 30,
@@ -140,6 +155,7 @@ export const DEFAULT_HOUSEHOLD: Household = {
   excluded_ingredients: [],
   excluded_meals: [],
   accepted_meals: null,
+  required_meals: [],
   out_of_stock: [],
   pantry: {},
   assume_staples: true,

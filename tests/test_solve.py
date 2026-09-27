@@ -164,3 +164,46 @@ def test_meal_serving_cents_is_prorated_ingredient_cost():
         ) / max(1, m.servings))
         assert plan.meal_serving_cents[m.id] == expected
     assert any(v > 0 for v in plan.meal_serving_cents.values())
+
+
+def test_pinned_meal_is_cooked_at_least_once():
+    hh = make_household()
+    base = solve(MEALS, INGREDIENTS, hh, targets_for(hh))
+    assert base is not None
+    unused = [m.id for m in MEALS if m.id not in base.meals]
+    if not unused:
+        return  # every fixture meal already chosen; nothing to pin
+    pinned = solve(MEALS, INGREDIENTS, make_household(required_meals=[unused[0]]), targets_for(hh))
+    assert pinned is not None
+    assert pinned.meals.get(unused[0], 0) >= 1
+    assert "pins" not in pinned.relaxed
+
+
+def test_pin_that_cannot_fit_is_dropped_and_reported():
+    from stretch.solve import _serving_cents
+    priciest = max(MEALS, key=lambda m: _serving_cents(m, INGREDIENTS) * m.servings)
+    hh = make_household(ebt_cents=300, cash_cents=0, required_meals=[priciest.id])
+    plan = solve(MEALS, INGREDIENTS, hh, targets_for(hh))
+    assert plan is not None
+    assert priciest.id not in plan.meals
+    assert "pins" in plan.relaxed
+
+
+def test_meal_facts_match_solver_costs_and_flag_cash_items():
+    from stretch.solve import meal_facts
+    hh = make_household()
+    plan = solve(MEALS, INGREDIENTS, hh, targets_for(hh))
+    facts = meal_facts(MEALS, INGREDIENTS)
+    assert set(facts) == {m.id for m in MEALS}
+    for m in MEALS:
+        f = facts[m.id]
+        assert f.serving_cents == plan.meal_serving_cents[m.id]
+        cash = [i for i in m.ingredients if not INGREDIENTS[i].ebt_eligible]
+        assert f.snap_eligible == (not cash)
+        assert f.cash_ingredients == cash
+        assert ("quick" in f.tags) == (m.prep_min <= 15)
+        assert f.kcal >= 0 and f.protein_g >= 0
+    assert any("budget" in f.tags for f in facts.values())
+    for mid, n in plan.meals.items():
+        meal = next(m for m in MEALS if m.id == mid)
+        assert plan.meal_cost_cents[mid] == plan.meal_serving_cents[mid] * meal.servings * n

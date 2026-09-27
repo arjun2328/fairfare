@@ -1,32 +1,46 @@
-import { useEffect } from "react";
-import { ThumbsDown, X } from "lucide-react";
+import { useEffect, type ReactNode } from "react";
+import { Check, Leaf, ThumbsDown, X } from "lucide-react";
 import { fmtMoney } from "../format";
-import type { Ingredient, Meal } from "../types";
+import type { Ingredient, Meal, MealFacts } from "../types";
 import MealPhoto from "./MealPhoto";
 
-/** Full-detail bottom sheet for one meal: photo, description, ingredients with SNAP/Card tags, and the accept/reject actions. */
+/** "Rice", "Rice and beans", "Rice, beans and eggs". */
+function joinNames(names: string[]): string {
+  if (names.length <= 1) return names[0] ?? "";
+  return `${names.slice(0, -1).join(", ")} and ${names[names.length - 1]}`;
+}
+
+/** Recipe-detail bottom sheet: photo, per-serving facts, SNAP note, add/skip/pin actions, ingredients with SNAP/Card tags. */
 export default function MealDetail({
   meal,
   ingredients,
-  servingCents,
+  facts,
   times,
   excluded,
   included,
+  pinned,
   onClose,
   onNotForMe,
   onUndoNotForMe,
-  onToggleIncluded,
+  onSkip,
+  onInclude,
+  onPin,
+  onUnpin,
 }: {
   meal: Meal | null;
   ingredients: Record<string, Ingredient>;
-  servingCents?: number;
+  facts?: MealFacts;
   times?: number;
   excluded: boolean;
   included: boolean;
+  pinned: boolean;
   onClose: () => void;
   onNotForMe: (id: string) => void;
   onUndoNotForMe: (id: string) => void;
-  onToggleIncluded?: (id: string) => void;
+  onSkip: (id: string) => void;
+  onInclude: (id: string) => void;
+  onPin: (id: string) => void;
+  onUnpin: (id: string) => void;
 }) {
   const open = meal !== null;
   useEffect(() => {
@@ -40,16 +54,45 @@ export default function MealDetail({
 
   if (!meal) return null;
 
-  const hasCost = typeof servingCents === "number";
-  const equipment = meal.equipment.length ? meal.equipment.join(", ") : "no cooking";
-  const status =
-    times !== undefined && times > 0
-      ? `In your plan: cooked ${times}× this trip`
-      : excluded
-        ? "Marked not for me"
-        : !included
-          ? "Not in this trip's plan"
-          : "Available for this trip, not chosen by the planner";
+  const inTrip = times !== undefined && times > 0;
+  const meta = facts
+    ? `${meal.prep_min} min · ${fmtMoney(facts.serving_cents)} / serving · ${meal.servings} servings`
+    : `${meal.prep_min} min · ${meal.servings} servings`;
+  const cashNames = facts ? joinNames(facts.cash_ingredients.map((id) => ingredients[id]?.name ?? id)) : "";
+
+  let action: ReactNode;
+  if (inTrip) {
+    action = (
+      <button type="button" className="btn-line on" onClick={() => onSkip(meal.id)}>
+        Added to this trip
+        <Check className="ic" aria-hidden="true" />
+      </button>
+    );
+  } else if (pinned) {
+    action = (
+      <button type="button" className="btn-line on" onClick={() => onUnpin(meal.id)}>
+        Pinned · didn't fit this trip
+      </button>
+    );
+  } else if (excluded) {
+    action = (
+      <button type="button" className="btn-line" onClick={() => onUndoNotForMe(meal.id)}>
+        Add back
+      </button>
+    );
+  } else if (!included) {
+    action = (
+      <button type="button" className="btn-line" onClick={() => onInclude(meal.id)}>
+        Include this trip
+      </button>
+    );
+  } else {
+    action = (
+      <button type="button" className="btn-primary" onClick={() => onPin(meal.id)}>
+        Add to this trip
+      </button>
+    );
+  }
 
   return (
     <div className="sheet sheet--top" role="dialog" aria-modal="true" aria-label={meal.name}>
@@ -67,48 +110,56 @@ export default function MealDetail({
         <div>
           <h2>{meal.name}</h2>
           {meal.description && <p className="meal-detail__desc">{meal.description}</p>}
+          <p className="meal-detail__metaline">{meta}</p>
         </div>
 
-        <div className="meal-detail__meta">
-          <span className="tag mute">{meal.prep_min} min</span>
-          <span className="tag mute">serves {meal.servings}</span>
-          <span className="tag mute">{equipment}</span>
-          {hasCost && <span className="tag cost">{fmtMoney(servingCents)} per serving</span>}
-        </div>
+        {facts && (
+          <>
+            <div className="nutri-row" aria-label="Per serving">
+              <div className="nstat">
+                <b>{Math.round(facts.kcal)}</b>
+                <span>calories</span>
+              </div>
+              <div className="nstat">
+                <b>{Math.round(facts.protein_g)}g</b>
+                <span>protein</span>
+              </div>
+              <div className="nstat">
+                <b>{Math.round(facts.fiber_g)}g</b>
+                <span>fiber</span>
+              </div>
+              <div className="nstat">
+                <b>{Math.round(facts.sodium_mg)}mg</b>
+                <span>sodium</span>
+              </div>
+            </div>
+            <p className="subnote meal-detail__pernote">per serving</p>
 
-        <p className="meal-detail__status">{status}</p>
-
-        <section>
-          <h3 className="section-title section-title--sm meal-detail__title">Ingredients</h3>
-          <ul className="meal-ings">
-            {Object.entries(meal.ingredients).map(([id, grams]) => {
-              const ing = ingredients[id];
-              const sub = ing?.kroger_product ? `${ing.kroger_product} · ${grams} g per batch` : `${grams} g per batch`;
-              return (
-                <li key={id} className="meal-ing">
-                  <span className="meal-ing__text">
-                    <span className="meal-ing__name">{ing?.name ?? id}</span>
-                    <span className="subnote">{sub}</span>
-                  </span>
-                  <span className="meal-ing__tags">
-                    {ing?.staple && <span className="tag mute">basic</span>}
-                    {ing?.ebt_eligible ? <span className="tag elig">SNAP</span> : <span className="tag unv">Card</span>}
-                  </span>
-                </li>
-              );
-            })}
-          </ul>
-        </section>
+            <div className="infobox" role="note">
+              <Leaf className="ic" aria-hidden="true" />
+              <span className="infobox__text">
+                {facts.snap_eligible ? (
+                  <>
+                    <b>All SNAP-eligible</b>
+                    <span>Every ingredient here can go on your EBT card.</span>
+                  </>
+                ) : (
+                  <>
+                    <b>Needs some cash</b>
+                    <span>{cashNames} must be paid with cash or card.</span>
+                  </>
+                )}
+              </span>
+            </div>
+          </>
+        )}
 
         <div className="meal-detail__actions">
-          {excluded ? (
-            <button type="button" className="btn-line" onClick={() => onUndoNotForMe(meal.id)}>
-              Add back
-            </button>
-          ) : (
+          {action}
+          {!excluded && (
             <button
               type="button"
-              className="btn-line"
+              className="btn-text"
               onClick={() => {
                 onNotForMe(meal.id);
                 onClose();
@@ -118,16 +169,33 @@ export default function MealDetail({
               Not for me
             </button>
           )}
-          {onToggleIncluded && !excluded && (
-            <button type="button" className="btn-line" onClick={() => onToggleIncluded(meal.id)}>
-              {included ? "Skip this trip" : "Include this trip"}
-            </button>
-          )}
         </div>
+
+        <section>
+          <h3 className="section-title section-title--sm meal-detail__title">Ingredients</h3>
+          <ul className="meal-ings">
+            {Object.keys(meal.ingredients).map((id) => {
+              const ing = ingredients[id];
+              const sub = ing ? `${ing.kroger_product} · ${ing.aisle} aisle` : null;
+              return (
+                <li key={id} className="meal-ing">
+                  <span className="meal-ing__text">
+                    <span className="meal-ing__name">{ing?.name ?? id}</span>
+                    {sub && <span className="subnote">{sub}</span>}
+                  </span>
+                  <span className="meal-ing__tags">
+                    {ing?.staple && <span className="tag mute">basic</span>}
+                    {ing && (ing.ebt_eligible ? <span className="tag elig">SNAP eligible</span> : <span className="tag unv">Card only</span>)}
+                  </span>
+                </li>
+              );
+            })}
+          </ul>
+        </section>
 
         <div>
           <p className="disclaim">Photo is an AI illustration of the dish, not the exact result.</p>
-          {hasCost && (
+          {facts && (
             <p className="disclaim">
               Cost per serving is pro-rated by weight from Kroger package prices. Packages are bought whole, so the basket total can differ.
             </p>

@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { UtensilsCrossed, X } from "lucide-react";
-import type { Household, Ingredient, Meal, Plan, Slot } from "../types";
+import type { Household, Ingredient, Meal, MealFacts, Plan, Slot } from "../types";
 import MealCard, { type MealBadge } from "./MealCard";
 import MealDetail from "./MealDetail";
 
@@ -39,19 +39,25 @@ export default function MealDrawer({
   ingredients,
   household,
   plan,
+  facts,
   error,
   onChangeAccepted,
   onUndoNotForMe,
   onNotForMe,
+  onPin,
+  onUnpin,
 }: {
   meals: Record<string, Meal>;
   ingredients: Record<string, Ingredient>;
   household: Household;
   plan: Plan | null;
+  facts: Record<string, MealFacts>;
   error: string | null;
   onChangeAccepted: (ids: string[] | null) => void;
   onUndoNotForMe: (mealId: string) => void;
   onNotForMe: (mealId: string) => void;
+  onPin: (mealId: string) => void;
+  onUnpin: (mealId: string) => void;
 }) {
   const [open, setOpen] = useState(false);
   const [filter, setFilter] = useState<Filter>("all");
@@ -60,9 +66,11 @@ export default function MealDrawer({
   const pool = Object.values(meals);
   const excluded = new Set(household.excluded_meals);
   const accepted = household.accepted_meals === null ? null : new Set(household.accepted_meals);
+  const pinnedSet = new Set(household.required_meals ?? []);
   const selectable = pool.filter((m) => !excluded.has(m.id));
   const isChecked = (id: string) => !excluded.has(id) && (accepted === null || accepted.has(id));
 
+  /** Flip one meal in or out of accepted_meals; everything selectable checked means "no filter" (null). */
   const toggle = (id: string) => {
     if (excluded.has(id)) return;
     const next = new Set(selectable.filter((m) => isChecked(m.id)).map((m) => m.id));
@@ -72,7 +80,7 @@ export default function MealDrawer({
   };
 
   const badgeFor = (id: string): MealBadge => (excluded.has(id) ? "muted" : isChecked(id) ? "in" : "out");
-  const servingCents = (id: string): number | undefined => plan?.meal_serving_cents?.[id];
+  const servingCents = (id: string): number | undefined => facts[id]?.serving_cents ?? plan?.meal_serving_cents?.[id];
   const timesFor = (id: string): number | undefined => plan?.meals?.[id];
 
   const filtered = pool.filter((m) => matches(m, filter));
@@ -154,14 +162,18 @@ export default function MealDrawer({
       <MealDetail
         meal={detail}
         ingredients={ingredients}
-        servingCents={detail ? servingCents(detail.id) : undefined}
+        facts={detail ? facts[detail.id] : undefined}
         times={detail ? timesFor(detail.id) : undefined}
         excluded={detail ? excluded.has(detail.id) : false}
         included={detail ? isChecked(detail.id) : false}
+        pinned={detail ? pinnedSet.has(detail.id) : false}
         onClose={() => setDetailId(null)}
         onNotForMe={onNotForMe}
         onUndoNotForMe={onUndoNotForMe}
-        onToggleIncluded={toggle}
+        onSkip={toggle}
+        onInclude={toggle}
+        onPin={onPin}
+        onUnpin={onUnpin}
       />
     </>
   );

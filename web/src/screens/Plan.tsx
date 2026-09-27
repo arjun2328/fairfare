@@ -1,37 +1,24 @@
 import { useState } from "react";
-import { AlertCircle, Leaf, ShoppingBasket, SlidersHorizontal } from "lucide-react";
+import { AlertCircle, Leaf, Pencil, ShoppingBasket } from "lucide-react";
 import { daysUntil, fmtDate, fmtMoney } from "../format";
 import { useApp } from "../state";
-import type { Household, Meal, NutrientTargets, Plan as PlanT, Slot } from "../types";
+import type { Household, Meal, Plan as PlanT, Slot } from "../types";
 import PaymentCard, { uncoveredSentence } from "../components/PaymentCard";
+import PlanForm, { NutritionStrip } from "../components/PlanForm";
 import MealDrawer from "../components/MealDrawer";
-import MealCard from "../components/MealCard";
 import MealDetail from "../components/MealDetail";
+import MealPhoto from "../components/MealPhoto";
 import TodayRow from "../components/TodayRow";
 import WeekView from "../components/WeekView";
 import AdjustSheet from "../components/AdjustSheet";
 
-const NUTRIENTS: { key: string; label: string; target: keyof NutrientTargets }[] = [
-  { key: "kcal", label: "calories", target: "kcal_min" },
-  { key: "protein", label: "protein", target: "protein_g_min" },
-  { key: "fiber", label: "fiber", target: "fiber_g_min" },
-  { key: "sodium", label: "sodium", target: "sodium_mg_max" },
-  { key: "sugar", label: "sugar", target: "sugar_g_max" },
-];
-
 const SLOT_ORDER: Record<Slot, number> = { breakfast: 0, lunch: 1, dinner: 2 };
-
-/** Dollars typed by the user -> integer cents. The only arithmetic on this screen. */
-function toCents(dollars: string): number {
-  const n = Number(dollars);
-  return Number.isFinite(n) && n >= 0 ? Math.round(n * 100) : 0;
-}
 
 function plural(n: number, word: string): string {
   return `${n} ${word}${n === 1 ? "" : "s"}`;
 }
 
-/** Second hero line: pace against the deposit when a date is set, otherwise the coverage window. */
+/** Pace line under the payment toggle: against the deposit when a date is set, otherwise the coverage window. */
 function paceLine(plan: PlanT, household: Household): { text: string; warn: boolean } {
   const covers = `Covers ${plural(household.trip_days, "day")}`;
   if (!household.deposit_date) return { text: `${covers} · until ${fmtDate(plan.covers_until)}`, warn: false };
@@ -40,96 +27,23 @@ function paceLine(plan: PlanT, household: Household): { text: string; warn: bool
   return { text: `${covers} · SNAP ${runOut}, ahead of your ${fmtDate(household.deposit_date)} deposit`, warn: true };
 }
 
-function PlanForm({ household, onSave }: { household: Household; onSave: (p: Partial<Household>) => void }) {
-  const [snap, setSnap] = useState(String(household.ebt_cents / 100));
-  const [cash, setCash] = useState(String(household.cash_cents / 100));
-  const [date, setDate] = useState(household.deposit_date ?? "");
-  const [days, setDays] = useState(household.trip_days);
-  const [people, setPeople] = useState(household.people);
-  const [prep, setPrep] = useState(household.max_prep_min);
-
-  const save = () =>
-    onSave({
-      ebt_cents: toCents(snap),
-      cash_cents: household.snap_only ? 0 : toCents(cash),
-      deposit_date: date || null,
-      trip_days: days,
-      people,
-      max_prep_min: prep,
-    });
-
-  return (
-    <div>
-      <div className="planform">
-        <div>
-          <label htmlFor="pf-snap">SNAP balance right now</label>
-          <input id="pf-snap" type="number" inputMode="decimal" min={0} step="0.01" value={snap} onChange={(e) => setSnap(e.target.value)} />
-        </div>
-        {!household.snap_only && (
-          <div>
-            <label htmlFor="pf-cash">Cash available for groceries</label>
-            <input id="pf-cash" type="number" inputMode="decimal" min={0} step="0.01" value={cash} onChange={(e) => setCash(e.target.value)} />
-          </div>
-        )}
-        <div>
-          <label htmlFor="pf-date">Next expected deposit date</label>
-          <input id="pf-date" type="date" value={date} onChange={(e) => setDate(e.target.value)} />
-        </div>
-        <div className="row row--between">
-          <div>
-            <label>Days this trip covers</label>
-            <div className="stepper" aria-label="Days this trip covers">
-              <button type="button" aria-label="One day fewer" onClick={() => setDays((d) => Math.max(1, d - 1))}>-</button>
-              <span>{days}</span>
-              <button type="button" aria-label="One day more" onClick={() => setDays((d) => Math.min(14, d + 1))}>+</button>
-            </div>
-          </div>
-          <div>
-            <label>People eating</label>
-            <div className="stepper" aria-label="People eating">
-              <button type="button" aria-label="One person fewer" onClick={() => setPeople((p) => Math.max(1, p - 1))}>-</button>
-              <span>{people}</span>
-              <button type="button" aria-label="One person more" onClick={() => setPeople((p) => Math.min(12, p + 1))}>+</button>
-            </div>
-          </div>
-        </div>
-        <div>
-          <label htmlFor="pf-prep">Most minutes you'll spend cooking a meal</label>
-          <select id="pf-prep" value={prep} onChange={(e) => setPrep(Number(e.target.value))}>
-            {[15, 30, 45, 60].map((m) => (
-              <option key={m} value={m}>{m} minutes</option>
-            ))}
-          </select>
-        </div>
-      </div>
-      <button type="button" className="btn-primary" style={{ marginTop: 8 }} onClick={save}>
-        Save changes
-      </button>
-      <p className="disclaim">Entered manually — not connected to your EBT account.</p>
-    </div>
-  );
-}
-
-function NutritionStrip({ plan }: { plan: PlanT }) {
-  return (
-    <div className="nutri-row" aria-label="Nutrition this trip">
-      {NUTRIENTS.map(({ key, label, target }) => {
-        const short = plan.shortfalls[key] ?? 0;
-        const goal = plan.targets[target];
-        const value = short > 0 && goal > 0 ? `${Math.round((100 * (plan.nutrition[key] ?? 0)) / goal)}%` : "met";
-        return (
-          <div key={key} className="nstat">
-            <b>{value}</b>
-            <span>{label}</span>
-          </div>
-        );
-      })}
-    </div>
-  );
-}
-
 export default function Plan() {
-  const { household, plan, meals, ingredients, solving, solveError, setHousehold, resetHousehold, navigate } = useApp();
+  const {
+    household,
+    plan,
+    meals,
+    ingredients,
+    facts,
+    solving,
+    solveError,
+    setHousehold,
+    resetHousehold,
+    navigate,
+    pinMeal,
+    unpinMeal,
+    skipMeal,
+    includeMeal,
+  } = useApp();
   const [adjusting, setAdjusting] = useState(false);
   const [openMeal, setOpenMeal] = useState<Meal | null>(null);
   if (!household) return null;
@@ -137,17 +51,11 @@ export default function Plan() {
   const notForMe = (id: string) => setHousehold({ excluded_meals: Array.from(new Set([...household.excluded_meals, id])) });
   const undoNotForMe = (id: string) => setHousehold({ excluded_meals: household.excluded_meals.filter((x) => x !== id) });
   const isIncluded = (id: string) => household.accepted_meals === null || household.accepted_meals.includes(id);
-  /** Same rule as the chooser: everything selectable checked means "no filter" (null). */
-  const toggleIncluded = (id: string) => {
-    const selectable = Object.values(meals).filter((m) => !household.excluded_meals.includes(m.id));
-    const current = new Set(selectable.filter((m) => isIncluded(m.id)).map((m) => m.id));
-    if (current.has(id)) current.delete(id);
-    else current.add(id);
-    setHousehold({ accepted_meals: current.size === selectable.length ? null : Array.from(current) });
-  };
+  const isPinned = (id: string) => (household.required_meals ?? []).includes(id);
 
   const days = daysUntil(household.deposit_date);
   const capApplies = days !== null && days > household.trip_days; // the solver paces SNAP across the deposit gap
+  const showDeposit = days !== null && days >= 0;
   const pace = plan ? paceLine(plan, household) : null;
   const uncoveredMsg = plan ? uncoveredSentence(plan.uncovered) : null;
   const staples = plan ? plan.staples_assumed.map((id) => ingredients[id]?.name ?? id) : [];
@@ -160,46 +68,43 @@ export default function Plan() {
   return (
     <div className="screen">
       <div className="topbar">
-        <div>
-          <div className="eyebrow">
-            This trip <span className="pill">{household.snap_only ? "SNAP only" : "SNAP + cash"}</span>
-          </div>
-          <h2>Your plan</h2>
-        </div>
-        <button type="button" className="adjust-btn" onClick={() => setAdjusting(true)} aria-haspopup="dialog">
-          <SlidersHorizontal className="ic" aria-hidden="true" />
-          Adjust
+        <h2>This trip's plan</h2>
+        <button type="button" className="iconbtn iconbtn--gold" aria-label="Profile" onClick={() => navigate("/profile")}>
+          <Leaf className="ic" aria-hidden="true" />
         </button>
       </div>
 
-      <section className={`hero${solving ? " loading" : ""}`} aria-label="What this trip costs">
-        {plan ? (
-          <div className="amt">
-            {fmtMoney(plan.basket_cents)}
-            <small>this trip</small>
+      <section className={`plancard${solving ? " loading" : ""}`} aria-label="This trip">
+        <div className="plantop">
+          <div>
+            <div className="big">{showDeposit ? plural(days, "day") : plural(household.trip_days, "day")}</div>
+            <div className="sub">{showDeposit ? "until your next deposit" : "this trip covers"}</div>
           </div>
-        ) : solveError ? (
-          <div className="amt quiet">No plan yet</div>
-        ) : (
-          <div className="skeleton hero-skel" aria-label="Planning" />
-        )}
+          <button type="button" className="iconbtn" aria-label="Adjust this trip" aria-haspopup="dialog" onClick={() => setAdjusting(true)}>
+            <Pencil className="ic" aria-hidden="true" />
+          </button>
+        </div>
+        <div className="seg" role="group" aria-label="How you'll pay">
+          <button type="button" className={household.snap_only ? "" : "active"} onClick={() => setHousehold({ snap_only: false })}>
+            SNAP + cash
+          </button>
+          <button type="button" className={household.snap_only ? "active" : ""} onClick={() => setHousehold({ snap_only: true, cash_cents: 0 })}>
+            SNAP only
+          </button>
+        </div>
         {plan && pace ? (
-          <div className={`pace${pace.warn ? " warn" : ""}`}>
+          <p className={`subnote pace-line${pace.warn ? " warn" : ""}`} role={pace.warn ? "status" : undefined}>
             {pace.warn && <AlertCircle className="ic" aria-hidden="true" />}
             <span>{pace.text}</span>
-          </div>
+          </p>
         ) : (
-          <div className="pace">
-            <span>{solveError ? "Tap Adjust to change the setup, then we'll try again." : "Working it out from real store prices"}</span>
-          </div>
-        )}
-        {plan && (
-          <div className="split">
-            <span className="money-pill money-snap">SNAP {fmtMoney(plan.ebt_cents)}</span>
-            <span className="money-pill money-cash">Cash {fmtMoney(plan.cash_cents)}</span>
-          </div>
+          <p className="subnote pace-line">
+            <span>{solveError ? "Tap the pencil to change the setup, then we'll try again." : "Working it out from real store prices"}</span>
+          </p>
         )}
       </section>
+
+      {plan && <PaymentCard plan={plan} household={household} loading={solving} title="Payment summary" />}
 
       {solveError && (
         <div className="warnbox" role="alert" style={{ marginTop: 0, marginBottom: 16 }}>
@@ -236,6 +141,36 @@ export default function Plan() {
         </div>
       )}
 
+      {plan && chosen.length > 0 && (
+        <section className={`triplist${solving ? " loading" : ""}`} aria-label="Meals this trip">
+          <h3 className="section-title section-title--sm">Your trip ({plural(chosen.length, "meal")})</h3>
+          {chosen.map(({ meal, times }) => {
+            const cost = plan.meal_cost_cents?.[meal.id];
+            return (
+              <div key={meal.id} className="weekitem">
+                <button type="button" className="weekitem__open" onClick={() => setOpenMeal(meal)}>
+                  <MealPhoto meal={meal} variant="thumb" />
+                  <span className="weekitem__text">
+                    <span className="name">{meal.name}</span>
+                    <span className="subnote">
+                      {times}× · {meal.prep_min} min
+                    </span>
+                  </span>
+                </button>
+                {typeof cost === "number" && <span className="tag cost">about {fmtMoney(cost)}</span>}
+                <button type="button" className="rm" aria-label={`Not for me: ${meal.name}`} title="Not for me" onClick={() => notForMe(meal.id)}>
+                  ×
+                </button>
+              </div>
+            );
+          })}
+        </section>
+      )}
+
+      <TodayRow day={plan?.schedule[0]} meals={meals} loading={solving} onOpen={setOpenMeal} />
+
+      {plan && <WeekView schedule={plan.schedule} meals={meals} onNotForMe={notForMe} onOpen={setOpenMeal} loading={solving} />}
+
       {plan && staples.length > 0 && (
         <p className="basics">
           Basics you have: {staples.join(", ")}.{" "}
@@ -244,27 +179,6 @@ export default function Plan() {
           </button>
         </p>
       )}
-
-      <TodayRow day={plan?.schedule[0]} meals={meals} loading={solving} onOpen={setOpenMeal} />
-
-      {plan && chosen.length > 0 && (
-        <section aria-label="Meals this trip">
-          <h3 className="section-title section-title--sm">Your meals this trip ({chosen.length})</h3>
-          {chosen.map(({ meal, times }) => (
-            <MealCard
-              key={meal.id}
-              meal={meal}
-              times={times}
-              servingCents={plan.meal_serving_cents[meal.id]}
-              badge={null}
-              onOpen={() => setOpenMeal(meal)}
-              loading={solving}
-            />
-          ))}
-        </section>
-      )}
-
-      {plan && <WeekView schedule={plan.schedule} meals={meals} onNotForMe={notForMe} loading={solving} />}
 
       <div className="cta-pinned" style={{ marginTop: 8 }}>
         <button type="button" className="btn-primary" onClick={() => navigate("/list")} disabled={!plan}>
@@ -279,25 +193,21 @@ export default function Plan() {
       <MealDetail
         meal={openMeal}
         ingredients={ingredients}
-        servingCents={openMeal ? plan?.meal_serving_cents[openMeal.id] : undefined}
+        facts={openMeal ? facts[openMeal.id] : undefined}
         times={openMeal ? plan?.meals[openMeal.id] : undefined}
         excluded={openMeal ? household.excluded_meals.includes(openMeal.id) : false}
         included={openMeal ? isIncluded(openMeal.id) : true}
+        pinned={openMeal ? isPinned(openMeal.id) : false}
         onClose={() => setOpenMeal(null)}
         onNotForMe={notForMe}
         onUndoNotForMe={undoNotForMe}
-        onToggleIncluded={toggleIncluded}
+        onSkip={skipMeal}
+        onInclude={includeMeal}
+        onPin={pinMeal}
+        onUnpin={unpinMeal}
       />
 
       <AdjustSheet open={adjusting} onClose={() => setAdjusting(false)} title="Adjust this trip">
-        <div className="seg" role="group" aria-label="How you'll pay" style={{ marginBottom: 0 }}>
-          <button type="button" className={household.snap_only ? "" : "active"} onClick={() => setHousehold({ snap_only: false })}>
-            SNAP + cash
-          </button>
-          <button type="button" className={household.snap_only ? "active" : ""} onClick={() => setHousehold({ snap_only: true, cash_cents: 0 })}>
-            SNAP only
-          </button>
-        </div>
         <PlanForm
           household={household}
           onSave={(patch) => {
@@ -333,10 +243,13 @@ export default function Plan() {
           ingredients={ingredients}
           household={household}
           plan={plan}
+          facts={facts}
           error={solveError}
           onChangeAccepted={(ids) => setHousehold({ accepted_meals: ids })}
           onUndoNotForMe={undoNotForMe}
           onNotForMe={notForMe}
+          onPin={pinMeal}
+          onUnpin={unpinMeal}
         />
         <div className="center">
           <button type="button" className="link" onClick={resetHousehold}>

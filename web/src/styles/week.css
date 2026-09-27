@@ -1,0 +1,49 @@
+/* Plan ("week") screen, Profile screen and the extended MealDetail sheet.
+   Builds on tokens.css, base.css (.sheet .checkrow .link), fairfare.css (.plancard .plantop .seg .iconbtn
+   .weekitem .tag .infobox .nutri-row .nstat .btn-line .btn-primary) and meals.css (.meal-photo .meal-detail__*). */
+
+/* The topbar's gold Leaf button (.iconbtn--gold) is shared chrome defined once in home.css. */
+
+/* ---- plan card: days + pencil, seg, pace line ---- */
+.plantop .iconbtn { width: 44px; height: 44px; }
+.plantop .iconbtn .ic { width: 18px; height: 18px; }
+.plancard .seg { margin-bottom: 12px; }
+.pace-line { display: flex; align-items: flex-start; gap: 6px; font-size: 13px; line-height: 1.4; }
+.pace-line .ic { width: 15px; height: 15px; flex: none; margin-top: 2px; }
+.pace-line.warn { color: var(--berry); }
+
+/* ---- "Your trip" rows: thumb + name/times + cost tag + remove ---- */
+.weekitem__open { flex: 1; min-width: 0; display: flex; align-items: center; gap: 12px; background: none; border: 0; padding: 0; text-align: left; color: var(--ink); min-height: 44px; }
+.weekitem__text { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+.weekitem__text .name { flex: none; font-size: 14.5px; font-weight: 500; line-height: 1.3; overflow: hidden; text-overflow: ellipsis; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; }
+.weekitem .tag.cost { flex: none; }
+.weekitem .rm { flex: none; margin-right: -10px; }
+.weekitem:last-child { border-bottom: 0; }
+.triplist { margin-bottom: 18px; }
+
+/* ---- day-by-day list: an open day's meal name is tappable ---- */
+.dayrow__open { display: flex; flex-direction: column; gap: 2px; align-items: flex-start; background: none; border: 0; padding: 4px 0; min-height: 44px; text-align: left; color: var(--ink); font: inherit; width: 100%; }
+
+/* ---- MealDetail sheet ---- */
+.meal-detail__metaline { font-size: 14px; color: var(--ink-soft); }
+.meal-detail .nutri-row { margin-bottom: 0; }
+.meal-detail__pernote { margin-top: -6px; }
+.meal-detail .infobox { margin-bottom: 0; }
+.infobox__text { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.infobox__text b { font-weight: 700; }
+.btn-text { width: 100%; background: none; border: 0; color: var(--ink-soft); font-size: 15px; font-weight: 600; min-height: 44px; padding: 8px; display: inline-flex; align-items: center; justify-content: center; gap: 8px; }
+.btn-text .ic { width: 18px; height: 18px; }
+
+/* ---- Profile ---- */
+.profile-head { display: flex; flex-direction: column; align-items: center; gap: 10px; margin: 6px 0 22px; text-align: center; }
+.profile-avatar { width: 64px; height: 64px; border-radius: 50%; background: var(--gold); color: var(--green-deep); display: flex; align-items: center; justify-content: center; }
+.profile-avatar .ic { width: 30px; height: 30px; }
+.profile-list { display: flex; flex-direction: column; background: var(--card); border: 1px solid var(--line); border-radius: var(--radius); padding: 0 16px; margin-bottom: 18px; }
+.profile-row { width: 100%; min-height: 52px; display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 8px 0; background: none; border: 0; border-bottom: 1px solid var(--line); color: var(--ink); font-size: 15px; text-align: left; }
+.profile-row:last-child { border-bottom: 0; }
+.profile-row__label { flex: 1; min-width: 0; font-weight: 500; }
+.profile-row__value { flex: none; display: inline-flex; align-items: center; gap: 4px; color: var(--ink-soft); font-size: 14px; max-width: 55%; }
+.profile-row__value span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.profile-row .ic { width: 18px; height: 18px; color: var(--ink-soft); flex: none; }
+.profile-foot { margin-top: auto; padding-top: 12px; display: flex; flex-direction: column; gap: 4px; text-align: center; }
+.sheet-note { font-size: 13px; color: var(--ink-soft); }

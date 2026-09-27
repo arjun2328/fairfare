@@ -11,12 +11,13 @@ import {
   type ReactNode,
 } from "react";
 import { api, ApiError } from "./api";
-import type { Household, Ingredient, Meal, PantryItem, Plan } from "./types";
+import { DEFAULT_HOUSEHOLD, type Household, type Ingredient, type Meal, type MealFacts, type PantryItem, type Plan } from "./types";
 
-export type Path = "/quiz" | "/plan" | "/pantry" | "/list" | "/register";
-const PATHS: Path[] = ["/quiz", "/plan", "/pantry", "/list", "/register"];
+export type Path = "/quiz" | "/home" | "/plan" | "/pantry" | "/list" | "/register" | "/cookbook" | "/profile";
+const PATHS: Path[] = ["/quiz", "/home", "/plan", "/pantry", "/list", "/register", "/cookbook", "/profile"];
 
-const LS = { household: "stretch.household", pantry: "stretch.pantryItems", session: "stretch.sessionId" };
+// v2 keys: the stored household gained fields and new defaults; older entries are ignored on purpose.
+const LS = { household: "stretch.v2.household", pantry: "stretch.v2.pantryItems", session: "stretch.sessionId" };
 
 function readLS<T>(key: string, fallback: T): T {
   try {
@@ -41,7 +42,7 @@ function newSessionId(): string {
 }
 function currentPath(): Path {
   const p = window.location.pathname as Path;
-  return PATHS.includes(p) ? p : "/plan";
+  return PATHS.includes(p) ? p : "/home";
 }
 
 export interface AppState {
@@ -52,6 +53,7 @@ export interface AppState {
   sessionId: string;
   ingredients: Record<string, Ingredient>; // id -> Ingredient, loaded once from /ingredients
   meals: Record<string, Meal>; // id -> Meal, the candidate pool from /meals
+  facts: Record<string, MealFacts>; // id -> per-serving cost, nutrition and tags from /meal_facts
   solving: boolean;
   solveError: string | null; // plain-language 422 detail; shown in the ChangedLine slot
   apiOk: boolean | null; // null = not checked yet
@@ -69,12 +71,22 @@ export interface AppActions {
   setPantryItems(items: PantryItem[]): void;
   /** Force a solve now (e.g. after Pantry confirm). */
   resolveNow(): Promise<void>;
+  /** Pin a meal: the solver cooks it at least once this trip when the budget allows. */
+  pinMeal(id: string): void;
+  unpinMeal(id: string): void;
+  /** Drop a meal from this trip (unpin + remove from the accepted set). */
+  skipMeal(id: string): void;
+  /** Allow a skipped meal again. */
+  includeMeal(id: string): void;
 }
 
 const Ctx = createContext<(AppState & AppActions) | null>(null);
 
 export function StateProvider({ children }: { children: ReactNode }) {
-  const [household, setHouseholdState] = useState<Household | null>(() => readLS<Household | null>(LS.household, null));
+  const [household, setHouseholdState] = useState<Household | null>(() => {
+    const stored = readLS<Household | null>(LS.household, null);
+    return stored ? { ...DEFAULT_HOUSEHOLD, ...stored } : null; // fill fields added since it was saved
+  });
   const [plan, setPlan] = useState<Plan | null>(null);
   const [prevPlan, setPrevPlan] = useState<Plan | null>(null);
   const [pantryItems, setPantryItemsState] = useState<PantryItem[]>(() => readLS<PantryItem[]>(LS.pantry, []));
@@ -87,6 +99,7 @@ export function StateProvider({ children }: { children: ReactNode }) {
   });
   const [ingredients, setIngredients] = useState<Record<string, Ingredient>>({});
   const [meals, setMeals] = useState<Record<string, Meal>>({});
+  const [facts, setFacts] = useState<Record<string, MealFacts>>({});
   const [solving, setSolving] = useState(false);
   const [solveError, setSolveError] = useState<string | null>(null);
   const [apiOk, setApiOk] = useState<boolean | null>(null);
@@ -133,6 +146,10 @@ export function StateProvider({ children }: { children: ReactNode }) {
     api
       .meals(sessionId)
       .then((list) => alive && setMeals(Object.fromEntries(list.map((m) => [m.id, m]))))
+      .catch(() => undefined);
+    api
+      .mealFacts(sessionId)
+      .then((list) => alive && setFacts(Object.fromEntries(list.map((f) => [f.meal_id, f]))))
       .catch(() => undefined);
     return () => {
       alive = false;
@@ -193,7 +210,7 @@ export function StateProvider({ children }: { children: ReactNode }) {
       setPrevPlan(null);
       setSolveError(null);
       setHouseholdState(h);
-      navigate("/plan");
+      navigate("/home");
     },
     [navigate],
   );
@@ -204,6 +221,35 @@ export function StateProvider({ children }: { children: ReactNode }) {
   }, [navigate]);
   const setPantryItems = useCallback((items: PantryItem[]) => setPantryItemsState(items), []);
 
+  // ---- meal-level choices (all plain filters on the candidate pool; the solver does the rest) ----
+  const pinMeal = useCallback((id: string) => {
+    setHouseholdState((h) => {
+      if (!h) return h;
+      const required = h.required_meals.includes(id) ? h.required_meals : [...h.required_meals, id];
+      const accepted = h.accepted_meals && !h.accepted_meals.includes(id) ? [...h.accepted_meals, id] : h.accepted_meals;
+      return { ...h, required_meals: required, accepted_meals: accepted, excluded_meals: h.excluded_meals.filter((x) => x !== id) };
+    });
+  }, []);
+  const unpinMeal = useCallback((id: string) => {
+    setHouseholdState((h) => (h ? { ...h, required_meals: h.required_meals.filter((x) => x !== id) } : h));
+  }, []);
+  const skipMeal = useCallback((id: string) => {
+    setHouseholdState((h) => {
+      if (!h) return h;
+      const selectable = Object.keys(mealsRef.current).filter((m) => !h.excluded_meals.includes(m) && m !== id);
+      const accepted = h.accepted_meals === null ? selectable : h.accepted_meals.filter((m) => m !== id);
+      return { ...h, required_meals: h.required_meals.filter((x) => x !== id), accepted_meals: accepted };
+    });
+  }, []);
+  const includeMeal = useCallback((id: string) => {
+    setHouseholdState((h) => {
+      if (!h || h.accepted_meals === null) return h;
+      const next = h.accepted_meals.includes(id) ? h.accepted_meals : [...h.accepted_meals, id];
+      const selectable = Object.keys(mealsRef.current).filter((m) => !h.excluded_meals.includes(m));
+      return { ...h, accepted_meals: selectable.every((m) => next.includes(m)) ? null : next };
+    });
+  }, []);
+
   const value = useMemo<AppState & AppActions>(
     () => ({
       household,
@@ -213,6 +259,7 @@ export function StateProvider({ children }: { children: ReactNode }) {
       sessionId,
       ingredients,
       meals,
+      facts,
       solving,
       solveError,
       apiOk,
@@ -223,9 +270,13 @@ export function StateProvider({ children }: { children: ReactNode }) {
       resetHousehold,
       setPantryItems,
       resolveNow: runSolve,
+      pinMeal,
+      unpinMeal,
+      skipMeal,
+      includeMeal,
     }),
-    [household, plan, prevPlan, pantryItems, sessionId, ingredients, meals, solving, solveError, apiOk, path,
-     navigate, setHousehold, startHousehold, resetHousehold, setPantryItems, runSolve],
+    [household, plan, prevPlan, pantryItems, sessionId, ingredients, meals, facts, solving, solveError, apiOk, path,
+     navigate, setHousehold, startHousehold, resetHousehold, setPantryItems, runSolve, pinMeal, unpinMeal, skipMeal, includeMeal],
   );
 
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>;

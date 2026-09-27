@@ -8,7 +8,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 
 from stretch import explain, generate, nutrition, pantry, solve
-from stretch.schemas import Household, Ingredient, Meal, PantryItem, Plan, load_ingredients
+from stretch.schemas import Household, Ingredient, Meal, MealFacts, PantryItem, Plan, load_ingredients
 
 load_dotenv()
 
@@ -107,6 +107,12 @@ def get_ingredients() -> list[Ingredient]:
 def get_meals(session_id: str | None = None) -> list[Meal]:
     _require_data()
     return _pool(session_id)
+
+
+@app.get("/meal_facts")
+def get_meal_facts(session_id: str | None = None) -> list[MealFacts]:
+    _require_data()
+    return list(solve.meal_facts(_pool(session_id), INGREDIENTS).values())
 
 
 @app.post("/solve")

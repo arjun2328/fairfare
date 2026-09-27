@@ -70,6 +70,7 @@ class Household(BaseModel):
     excluded_ingredients: list[str] = []
     excluded_meals: list[str] = []
     accepted_meals: list[str] | None = None
+    required_meals: list[str] = []   # meals the user pinned; the solver cooks each at least once when the budget allows
     out_of_stock: list[str] = []
     pantry: dict[str, int] = {}
     assume_staples: bool = True
@@ -97,6 +98,18 @@ class DaySchedule(BaseModel):
     breakfast: str | None          # meal id, "school", or None when nothing covers it
     lunch: str | None
     dinner: str | None
+
+
+class MealFacts(BaseModel):          # per-meal display facts, computed in solve.meal_facts from real ingredient data
+    meal_id: str
+    serving_cents: int               # ingredient cost per serving, pro-rated by weight; assumed staples free
+    kcal: int                        # per serving
+    protein_g: int
+    fiber_g: int
+    sodium_mg: int
+    snap_eligible: bool              # every ingredient is EBT-eligible
+    cash_ingredients: list[str] = []
+    tags: list[str] = []             # quick, no-cook, microwave, oven, budget, high-protein, high-fiber
 
 
 class Plan(BaseModel):
@@ -128,6 +141,7 @@ class Plan(BaseModel):
     relaxed: list[str] = []               # rules loosened to find a plan: "variety", "repeats", "slots"
     staples_assumed: list[str] = []       # ingredient ids treated as already on hand
     meal_serving_cents: dict[str, int] = {}  # meal_id -> ingredient cost per serving, pro-rated by weight from package prices
+    meal_cost_cents: dict[str, int] = {}     # chosen meal_id -> approximate ingredient cost of all its batches this trip
 
 
 def _to_bool(value: str, field: str, row_no: int) -> bool:

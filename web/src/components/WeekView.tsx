@@ -13,11 +13,13 @@ export default function WeekView({
   schedule,
   meals,
   onNotForMe,
+  onOpen,
   loading,
 }: {
   schedule: DaySchedule[];
   meals: Record<string, Meal>;
   onNotForMe: (mealId: string) => void;
+  onOpen?: (meal: Meal) => void;
   loading?: boolean;
 }) {
   const [open, setOpen] = useState<number | null>(null);
@@ -50,8 +52,17 @@ export default function WeekView({
                   <div key={key} className={`dayrow${isOpen ? " open" : ""}`}>
                     <span className="slotlabel">{label}</span>
                     <span className="name">
-                      <span className={`mealname${isMeal ? "" : " subnote"}`}>{name}</span>
-                      {isOpen && detail && <span className="subnote">{detail}</span>}
+                      {isOpen && m && onOpen ? (
+                        <button type="button" className="dayrow__open" onClick={() => onOpen(m)} aria-label={`See ${m.name}`}>
+                          <span className="mealname">{name}</span>
+                          {detail && <span className="subnote">{detail}</span>}
+                        </button>
+                      ) : (
+                        <>
+                          <span className={`mealname${isMeal ? "" : " subnote"}`}>{name}</span>
+                          {isOpen && detail && <span className="subnote">{detail}</span>}
+                        </>
+                      )}
                     </span>
                     {isOpen && isMeal && (
                       <button
