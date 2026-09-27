@@ -100,19 +100,25 @@ def main() -> None:
     ap.add_argument("--workers", type=int, default=3)
     ap.add_argument("--limit", type=int, default=0)
     ap.add_argument("--only", nargs="*")
+    ap.add_argument("--retry-failed", action="store_true",
+                    help="re-look-up only the rows of the existing file that have no price; keep the rest")
     args = ap.parse_args()
     store = STORES[args.store]
 
-    ingredients = list(load_ingredients("data/ingredients.csv").values())
+    all_ingredients = list(load_ingredients("data/ingredients.csv").values())
+    ingredients = list(all_ingredients)
+    out_path = f"data/prices_{args.store}.csv"
+    rows: dict[str, dict] = {}
+    if args.retry_failed and os.path.exists(out_path):
+        with open(out_path, encoding="utf-8", newline="") as fh:
+            rows = {r["id"]: r for r in csv.DictReader(fh)}
+        ingredients = [i for i in ingredients if not (rows.get(i.id, {}).get("price_cents") or "").strip()]
     if args.only:
         wanted = set(args.only)
         ingredients = [i for i in ingredients if i.id in wanted]
     if args.limit:
         ingredients = ingredients[: args.limit]
-    out_path = f"data/prices_{args.store}.csv"
     print(f"price_search: {len(ingredients)} items at {store['name']} -> {out_path}", flush=True)
-
-    rows: dict[str, dict] = {}
     started = time.time()
     with ThreadPoolExecutor(max_workers=args.workers) as ex:
         futures = {ex.submit(lookup, ing, store): ing.id for ing in ingredients}
@@ -126,10 +132,10 @@ def main() -> None:
     with open(out_path, "w", newline="", encoding="utf-8") as fh:
         w = csv.DictWriter(fh, fieldnames=fields)
         w.writeheader()
-        for ing in ingredients:
-            w.writerow(rows.get(ing.id, {"id": ing.id, "note": "not attempted"}))
-    priced = sum(1 for r in rows.values() if r["price_cents"] != "")
-    print(f"price_search: done in {int(time.time() - started)}s: {priced}/{len(ingredients)} priced", flush=True)
+        for ing in all_ingredients if (args.retry_failed or not (args.only or args.limit)) else ingredients:
+            w.writerow({k: rows.get(ing.id, {"id": ing.id, "note": "not attempted"}).get(k, "") for k in fields})
+    priced = sum(1 for r in rows.values() if (r.get("price_cents") or "") != "")
+    print(f"price_search: done in {int(time.time() - started)}s: {priced}/{len(all_ingredients)} priced overall", flush=True)
 
 
 if __name__ == "__main__":
