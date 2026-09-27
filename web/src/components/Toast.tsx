@@ -4,7 +4,7 @@ import { useApp } from "../state";
 import { fmtMoney } from "../format";
 import type { Plan } from "../types";
 
-const SHOW_MS = 4000;
+const SHOW_MS = 7000;
 const QUIET_AFTER_MS = 400;
 
 /** Feedback for every re-solve: the plan's what_changed line for 4 s (tap to dismiss), and a quiet
@@ -22,10 +22,13 @@ export default function Toast() {
     shownFor.current = plan;
     let text = plan.what_changed?.trim() || "";
     if (plan.relaxed.includes("pins")) {
-      const dropped = (household?.required_meals ?? []).find((id) => !(plan.meals[id] > 0));
+      // Pins are appended in tap order, so the last one that did not make it is the recipe just added.
+      const droppedAll = (household?.required_meals ?? []).filter((id) => !(plan.meals[id] > 0));
+      const dropped = droppedAll[droppedAll.length - 1];
       if (dropped) {
         const name = meals[dropped]?.name ?? "That recipe";
-        text = `${name} didn't fit this trip's ${fmtMoney(plan.trip_snap_cap_cents)}. Raise your balance or remove a meal.`;
+        const more = droppedAll.length > 1 ? ` ${droppedAll.length - 1} other added recipe${droppedAll.length > 2 ? "s" : ""} also didn't fit.` : "";
+        text = `${name} didn't fit this trip's ${fmtMoney(plan.trip_snap_cap_cents)}. Raise your balance or remove a meal.${more}`;
       }
     }
     if (!text || (!prevPlan && !plan.relaxed.includes("pins"))) return;

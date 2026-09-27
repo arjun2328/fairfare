@@ -27,7 +27,6 @@ export default function WeekView({
 
   return (
     <div className={loading ? "loading" : ""}>
-      <h3 className="section-title section-title--sm">Your days</h3>
       {schedule.map((day) => {
         const isOpen = open === day.day;
         return (

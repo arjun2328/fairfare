@@ -84,9 +84,22 @@ export default function Plan() {
     <div className="screen">
       <div className="topbar">
         <h2>Your plan</h2>
-        <button type="button" className="iconbtn iconbtn--gold" aria-label="Profile" onClick={() => navigate("/profile")}>
-          <Leaf className="ic" aria-hidden="true" />
-        </button>
+        <div className="row" style={{ gap: 8, marginLeft: "auto" }}>
+          <button type="button" className="iconbtn iconbtn--gold" aria-label="Profile" onClick={() => navigate("/profile")}>
+            <Leaf className="ic" aria-hidden="true" />
+          </button>
+          <button
+            type="button"
+            className="iconbtn"
+            style={{ width: 44, height: 44, marginLeft: 0, background: "var(--green-deep)", color: "#F1EEDD" }}
+            aria-label="Shopping list"
+            title="Shopping list"
+            disabled={!plan}
+            onClick={() => navigate("/list")}
+          >
+            <ShoppingBasket className="ic" style={{ width: 20, height: 20 }} aria-hidden="true" />
+          </button>
+        </div>
       </div>
 
       <section className={`hero${plan && solving ? " loading" : ""}`} aria-label="This trip">
@@ -220,13 +233,7 @@ export default function Plan() {
         </p>
       )}
 
-      <div className="cta-pinned" style={{ marginTop: 8 }}>
-        <button type="button" className="btn-primary" onClick={() => navigate("/list")} disabled={!plan}>
-          <ShoppingBasket className="ic" aria-hidden="true" />
-          Shopping list
-        </button>
-      </div>
-      <div className="center">
+      <div className="center" style={{ marginTop: 8 }}>
         <button type="button" className="link" onClick={() => setAdjusting(true)}>
           Change budget or dates
         </button>
