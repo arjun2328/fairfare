@@ -85,11 +85,19 @@ export default function StoreCompare() {
                     {s.priced} of {s.total} items priced
                     {p && Object.keys(p.uncovered).length > 0 ? " · some meals uncovered" : ""}
                   </span>
-                  {near && (
+                  {near ? (
                     <span className="subnote storecmp__near">
                       <MapPin className="ic" aria-hidden="true" />
                       {near.distance_miles} mi · {near.address}
                     </span>
+                  ) : (
+                    /^\d{5}$/.test(zip) &&
+                    nearbyState === "idle" && (
+                      <span className="subnote storecmp__near">
+                        <MapPin className="ic" aria-hidden="true" />
+                        No {s.name} within 15 mi of {zip}
+                      </span>
+                    )
                   )}
                 </span>
                 <span className="storecmp__total">{p ? <b>{fmtMoney(p.basket_cents)}</b> : <span className="subnote">no plan</span>}</span>
