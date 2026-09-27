@@ -84,7 +84,7 @@ export default function Plan() {
   return (
     <div className="screen">
       <div className="topbar screen-head screen-head--plan">
-        <h2>Your plan</h2>
+        <h2>Your Plan</h2>
         <TopActions />
       </div>
 

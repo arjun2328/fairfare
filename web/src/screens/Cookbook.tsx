@@ -36,7 +36,7 @@ export default function Cookbook() {
   return (
     <div className="screen">
       <div className="topbar screen-head screen-head--cookbook">
-        <h2>My cookbook</h2>
+        <h2>My Cookbook</h2>
         <TopActions />
       </div>
       <p className="subnote cook-intro">Recipes you save show up here, and the planner leans on them when it builds your trip.</p>

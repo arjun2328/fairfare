@@ -167,7 +167,7 @@ export default function Pantry() {
   return (
     <div className="screen pantry">
       <div className="topbar screen-head screen-head--pantry">
-        <h2>Your pantry</h2>
+        <h2>Your Pantry</h2>
         <TopActions />
       </div>
       <p className="subnote pantry-lede">We only buy what you don't have. Amounts are estimates.</p>

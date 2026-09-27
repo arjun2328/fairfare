@@ -109,7 +109,7 @@ export default function List() {
     <div className="screen">
       <div className="topbar screen-head screen-head--list">
         <div className="topbar__text">
-          <h2>Shopping list</h2>
+          <h2>Shopping List</h2>
           <p className="subnote">Everything your plan needs, nothing extra. Tick items as they go in your basket.</p>
         </div>
       </div>
