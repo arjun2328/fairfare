@@ -1,24 +1,23 @@
 import { Leaf, ShoppingBasket } from "lucide-react";
 import { useApp } from "../state";
 
-/** The two labelled shortcuts every main screen carries top-right: Profile and the Shopping list. */
+/** The two shortcuts every main screen carries top-right: Profile (gold leaf) and the Shopping list (dark basket). */
 export default function TopActions() {
   const { plan, navigate } = useApp();
   return (
     <div className="topactions">
-      <button type="button" className="adjust-btn" onClick={() => navigate("/profile")}>
+      <button type="button" className="iconbtn iconbtn--gold" aria-label="Profile" title="Profile" onClick={() => navigate("/profile")}>
         <Leaf className="ic" aria-hidden="true" />
-        Profile
       </button>
       <button
         type="button"
-        className="adjust-btn adjust-btn--primary"
+        className="iconbtn iconbtn--dark"
+        aria-label="Shopping list"
+        title={plan ? "Shopping list" : "Your plan is still loading"}
         disabled={!plan}
-        title={plan ? "Open your shopping list" : "Your plan is still loading"}
         onClick={() => navigate("/list")}
       >
         <ShoppingBasket className="ic" aria-hidden="true" />
-        Shopping list
       </button>
     </div>
   );

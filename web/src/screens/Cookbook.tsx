@@ -18,7 +18,8 @@ export default function Cookbook() {
   const favorites = new Set(household.favorite_meals);
   const required = new Set(household.required_meals);
   const isInTrip = (id: string) => (plan?.meals[id] ?? 0) > 0;
-  const isPinnedNotFit = (id: string) => required.has(id) && !isInTrip(id);
+  const isPinnedNotFit = (id: string) =>
+    !solving && (plan?.relaxed ?? []).includes("pins") && required.has(id) && !isInTrip(id);
   const neverShow = (id: string) =>
     setHousehold({
       excluded_meals: Array.from(new Set([...household.excluded_meals, id])),
@@ -69,7 +70,7 @@ export default function Cookbook() {
                   tag={factTag(f)}
                   favorite={favorites.has(meal.id)}
                   inTrip={inTrip}
-                  pinnedNotFit={(household?.required_meals ?? []).includes(meal.id) && !inTrip}
+                  pinnedNotFit={!solving && (plan?.relaxed ?? []).includes("pins") && (household?.required_meals ?? []).includes(meal.id) && !inTrip}
                   onOpen={() => setOpenMeal(meal)}
                   onToggleFavorite={() => toggleFavorite(meal.id)}
                   onAdd={() => pinMeal(meal.id)}

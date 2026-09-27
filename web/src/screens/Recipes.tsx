@@ -66,7 +66,9 @@ export default function Recipes() {
   const favorites = new Set(household.favorite_meals);
   const required = new Set(household.required_meals);
   const isInTrip = (id: string) => (plan?.meals[id] ?? 0) > 0;
-  const isPinnedNotFit = (id: string) => required.has(id) && !isInTrip(id);
+  // Only once the server confirms a pin was dropped; while a solve is running the pin is simply pending.
+  const isPinnedNotFit = (id: string) =>
+    !solving && (plan?.relaxed ?? []).includes("pins") && required.has(id) && !isInTrip(id);
   // "Don't suggest this again" is a filter on the candidate pool, never an LLM call. A hidden meal also loses its pin.
   const neverShow = (id: string) =>
     setHousehold({
@@ -169,7 +171,7 @@ export default function Recipes() {
                   tag={factTag(f)}
                   favorite={favorites.has(meal.id)}
                   inTrip={inTrip}
-                  pinnedNotFit={(household?.required_meals ?? []).includes(meal.id) && !inTrip}
+                  pinnedNotFit={!solving && (plan?.relaxed ?? []).includes("pins") && (household?.required_meals ?? []).includes(meal.id) && !inTrip}
                   onOpen={() => setOpenMeal(meal)}
                   onToggleFavorite={() => toggleFavorite(meal.id)}
                   onAdd={() => pinMeal(meal.id)}

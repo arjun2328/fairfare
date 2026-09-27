@@ -233,7 +233,7 @@ export default function Plan() {
         times={openId ? plan?.meals[openId] : undefined}
         favorite={openId ? household.favorite_meals.includes(openId) : false}
         inTrip={openId ? inTrip(openId) : false}
-        pinnedNotFit={openId ? household.required_meals.includes(openId) && !inTrip(openId) : false}
+        pinnedNotFit={openId ? !solving && (plan?.relaxed ?? []).includes("pins") && household.required_meals.includes(openId) && !inTrip(openId) : false}
         excluded={openId ? household.excluded_meals.includes(openId) : false}
         onClose={() => setOpenMeal(null)}
         onToggleFavorite={toggleFavorite}
