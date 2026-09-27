@@ -109,6 +109,24 @@ def complete(messages: list[dict],
     return {"text": _strip_fences(choice.content), "tool_calls": calls, "raw": resp}
 
 
+def web_lookup(prompt: str) -> str:
+    """One Responses API call with the built-in web-search tool; returns the text answer, fences stripped.
+    Needs a key with the Responses API permission (model from LLM_SEARCH_MODEL, default gpt-4o-mini)."""
+    if _client is None:
+        raise RuntimeError("LLM is not configured: set LLM_BASE_URL, LLM_API_KEY and LLM_MODEL in .env")
+    model = os.getenv("LLM_SEARCH_MODEL") or "gpt-4o-mini"
+    resp = None
+    for attempt in range(2):
+        try:
+            resp = _client.responses.create(model=model, tools=[{"type": "web_search_preview"}], input=prompt)
+            break
+        except Exception:  # network or 5xx; retry exactly once
+            if attempt == 1:
+                raise
+            time.sleep(1.0)
+    return _strip_fences(getattr(resp, "output_text", "") or "") or ""
+
+
 def generate_image(prompt: str, size: str = "1024x1024", quality: str = "medium") -> bytes:
     """One image from the configured provider (gpt-image family, model from LLM_IMAGE_MODEL); returns JPEG bytes."""
     image_key = os.getenv("LLM_IMAGE_API_KEY") or LLM_API_KEY
