@@ -112,3 +112,6 @@
 .daycol { padding-top: 0; overflow: hidden; }
 .daycol__head { background: var(--paper-alt); margin: 0 -12px 6px; padding: 9px 12px; }
 .daycol--today .daycol__head { background: color-mix(in srgb, var(--green) 16%, var(--card)); color: var(--green-deep); }
+
+.link--danger { color: var(--red); text-decoration: none; font-size: 14px; margin-top: 12px; }
+.link--danger.armed { font-weight: 700; }

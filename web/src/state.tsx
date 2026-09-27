@@ -68,6 +68,8 @@ export interface AppActions {
   startHousehold(h: Household): void;
   /** "Redo setup": forget household and plan, go to /quiz. */
   resetHousehold(): void;
+  /** Forget everything stored on this device (setup, pantry, cookbook, hidden recipes) and start over. */
+  resetAll(): void;
   setPantryItems(items: PantryItem[]): void;
   /** Force a solve now (e.g. after Pantry confirm). */
   resolveNow(): Promise<void>;
@@ -221,6 +223,23 @@ export function StateProvider({ children }: { children: ReactNode }) {
     setSolveError(null);
     navigate("/quiz");
   }, [navigate]);
+  const resetAll = useCallback(() => {
+    solveSeq.current += 1; // drop any solve in flight
+    writeLS(LS.household, null);
+    writeLS(LS.pantry, null);
+    try {
+      localStorage.removeItem("stretch.v2.introSeen");
+    } catch {
+      /* storage unavailable */
+    }
+    setPlan(null);
+    setPrevPlan(null);
+    setSolveError(null);
+    setPantryItemsState([]);
+    setHouseholdState(null);
+    setSolving(false);
+    navigate("/quiz");
+  }, [navigate]);
   const setPantryItems = useCallback((items: PantryItem[]) => setPantryItemsState(items), []);
 
   // ---- meal-level choices (all plain filters on the candidate pool; the solver does the rest) ----
@@ -278,6 +297,7 @@ export function StateProvider({ children }: { children: ReactNode }) {
       setHousehold,
       startHousehold,
       resetHousehold,
+      resetAll,
       setPantryItems,
       resolveNow: runSolve,
       pinMeal,
@@ -287,8 +307,8 @@ export function StateProvider({ children }: { children: ReactNode }) {
       toggleFavorite,
     }),
     [household, plan, prevPlan, pantryItems, sessionId, ingredients, meals, facts, solving, solveError, apiOk, path,
-     navigate, setHousehold, startHousehold, resetHousehold, setPantryItems, runSolve, pinMeal, unpinMeal, skipMeal,
-     includeMeal, toggleFavorite],
+     navigate, setHousehold, startHousehold, resetHousehold, resetAll, setPantryItems, runSolve, pinMeal, unpinMeal,
+     skipMeal, includeMeal, toggleFavorite],
   );
 
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>;

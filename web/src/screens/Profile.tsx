@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { ChevronLeft, ChevronRight, Leaf } from "lucide-react";
 import { useApp } from "../state";
 import type { Diet, Equipment } from "../types";
@@ -37,7 +37,13 @@ function ProfileRow({ label, value, onClick }: { label: string; value?: string; 
 
 /** Household settings as a list of rows; each opens a sheet that patches the household (and re-solves). Reached from Plan, not a tab. */
 export default function Profile() {
-  const { household, plan, meals, setHousehold, resetHousehold, navigate } = useApp();
+  const { household, plan, meals, setHousehold, resetHousehold, resetAll, navigate } = useApp();
+  const [resetArmed, setResetArmed] = useState(false);
+  useEffect(() => {
+    if (!resetArmed) return;
+    const t = window.setTimeout(() => setResetArmed(false), 5000); // disarm if the second tap never comes
+    return () => window.clearTimeout(t);
+  }, [resetArmed]);
   const [sheet, setSheet] = useState<Sheet | null>(null);
   if (!household) return null;
 
@@ -92,6 +98,14 @@ export default function Profile() {
       <div className="profile-foot">
         <p className="disclaim" style={{ marginTop: 0 }}>{DISCLAIM}</p>
         {plan && <p className="tiny muted">Planner answered in {plan.solve_ms} ms</p>}
+        <button
+          type="button"
+          className={`link link--danger${resetArmed ? " armed" : ""}`}
+          onClick={() => (resetArmed ? resetAll() : setResetArmed(true))}
+        >
+          {resetArmed ? "Tap again to erase everything on this phone" : "Reset this phone and start over"}
+        </button>
+        {resetArmed && <p className="tiny muted">Setup, balances, pantry, cookbook and hidden recipes are erased. Recipes and prices stay.</p>}
       </div>
 
       <AdjustSheet open={sheet === "balances"} onClose={close} title="Deposit & balances">
