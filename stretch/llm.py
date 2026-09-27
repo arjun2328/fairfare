@@ -110,21 +110,22 @@ def complete(messages: list[dict],
 
 
 def web_lookup(prompt: str) -> str:
-    """One Responses API call with the built-in web-search tool; returns the text answer, fences stripped.
-    Needs a key with the Responses API permission (model from LLM_SEARCH_MODEL, default gpt-4o-mini)."""
+    """One web-search-enabled chat call (model from LLM_SEARCH_MODEL, default gpt-5-search-api); returns the
+    text answer with fences stripped. Uses the chat endpoint so an ordinary chat-scoped key is enough."""
     if _client is None:
         raise RuntimeError("LLM is not configured: set LLM_BASE_URL, LLM_API_KEY and LLM_MODEL in .env")
-    model = os.getenv("LLM_SEARCH_MODEL") or "gpt-4o-mini"
+    model = os.getenv("LLM_SEARCH_MODEL") or "gpt-5-search-api"
     resp = None
-    for attempt in range(2):
+    for attempt in range(4):
         try:
-            resp = _client.responses.create(model=model, tools=[{"type": "web_search_preview"}], input=prompt)
+            resp = _client.chat.completions.create(model=model, web_search_options={},
+                                                   messages=[{"role": "user", "content": prompt}])
             break
-        except Exception:  # network or 5xx; retry exactly once
-            if attempt == 1:
+        except Exception:  # network or 5xx (the search model throws the odd 500); back off and retry
+            if attempt == 3:
                 raise
-            time.sleep(1.0)
-    return _strip_fences(getattr(resp, "output_text", "") or "") or ""
+            time.sleep(2.0 * (attempt + 1))
+    return _strip_fences(resp.choices[0].message.content or "") or ""
 
 
 def generate_image(prompt: str, size: str = "1024x1024", quality: str = "medium") -> bytes:

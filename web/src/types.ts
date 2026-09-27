@@ -58,6 +58,15 @@ export interface MealFacts {
   tags: string[]; // "quick" | "no-cook" | "microwave" | "oven" | "budget" | "high-protein" | "high-fiber"
 }
 
+/** A store we hold real prices for; `priced` of `total` ingredients have a listing price there. */
+export interface StoreInfo {
+  id: string;
+  name: string;
+  priced: number;
+  total: number;
+  source: string;
+}
+
 export interface PantryItem {
   ingredient_id: string;
   level: PantryLevel;
@@ -82,6 +91,7 @@ export interface Household {
   required_meals: string[]; // meals the user pinned: the solver cooks each at least once if it can
   favorite_meals: string[]; // the user's cookbook: saved recipes the solver leans toward
   card_covers_snap_gap: boolean; // opt-in: SNAP-eligible food that does not fit under the SNAP cap goes on the card
+  store: string; // which store's prices the plan uses ("kroger" by default)
   out_of_stock: string[];
   pantry: Record<string, number>;
   assume_staples: boolean;
@@ -161,6 +171,7 @@ export const DEFAULT_HOUSEHOLD: Household = {
   required_meals: [],
   favorite_meals: [],
   card_covers_snap_gap: false,
+  store: "kroger",
   out_of_stock: [],
   pantry: {},
   assume_staples: true,

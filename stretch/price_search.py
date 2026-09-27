@@ -28,11 +28,20 @@ STORES = {
 SIZE_TOLERANCE = 0.25  # same rule as prices.py: accept a listing within 25% of our package size
 
 
-def _prompt(ing: Ingredient, store: dict) -> str:
+def _oz(grams: int) -> str:
+    return f"{grams / 28.35:.0f} oz"
+
+
+def _prompt(ing: Ingredient, store: dict, exact_size: bool = False) -> str:
+    size_line = (
+        f"The package must be about {_oz(ing.package_g)} ({ing.package_g} g); do not report a different size. "
+        if exact_size
+        else f"Prefer a package size close to {_oz(ing.package_g)} ({ing.package_g} g). "
+    )
     return (
         f"Search {store['domain']} for the store-brand or cheapest comparable product matching: "
         f"{ing.name} (sold at Kroger as '{ing.kroger_product}', about {ing.package_g} g per package). "
-        f"Prefer a package size close to {ing.package_g} g. Use only a {store['domain']} product page that shows a price. "
+        f"{size_line}Use only a {store['domain']} product page that shows a price. "
         'Return JSON only, no prose: {"found": true|false, "product": "exact product name", '
         '"price_dollars": number, "size": "as printed, e.g. 32 oz or 12 ct", "url": "https://..."}. '
         "If no product page with a price is found, return {\"found\": false}."
@@ -49,12 +58,13 @@ def _parse(text: str) -> dict | None:
         return None
 
 
-def lookup(ing: Ingredient, store: dict) -> dict:
-    """One ingredient at one store; never invents: an unusable answer becomes a blank row with a note."""
+def lookup(ing: Ingredient, store: dict, exact_size: bool = False) -> dict:
+    """One ingredient at one store; never invents: an unusable answer becomes a blank row with a note.
+    A size mismatch triggers one retry that insists on our package size."""
     row = {"id": ing.id, "price_cents": "", "size": "", "product": "", "url": "",
            "checked_at": datetime.now(timezone.utc).isoformat(timespec="minutes"), "note": ""}
     try:
-        text = llm.web_lookup(_prompt(ing, store))
+        text = llm.web_lookup(_prompt(ing, store, exact_size))
     except Exception as exc:
         row["note"] = f"lookup failed: {str(exc)[:80]}"
         return row
@@ -74,6 +84,8 @@ def lookup(ing: Ingredient, store: dict) -> dict:
     size = str(data.get("size", "")).strip()
     grams = size_to_grams(size) if size else None
     if grams is not None and abs(grams - ing.package_g) > SIZE_TOLERANCE * ing.package_g:
+        if not exact_size:
+            return lookup(ing, store, exact_size=True)
         row.update(size=size, product=str(data.get("product", "")), url=url,
                    note=f"size mismatch: listing {grams} g vs ours {ing.package_g} g; price {cents} not used")
         return row

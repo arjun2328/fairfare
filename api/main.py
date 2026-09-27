@@ -7,7 +7,7 @@ from fastapi import FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 
-from stretch import explain, generate, nutrition, pantry, solve
+from stretch import explain, generate, nutrition, pantry, solve, stores
 from stretch.schemas import Household, Ingredient, Meal, MealFacts, PantryItem, Plan, load_ingredients
 
 load_dotenv()
@@ -98,9 +98,16 @@ def health() -> dict:
 
 
 @app.get("/ingredients")
-def get_ingredients() -> list[Ingredient]:
+def get_ingredients(store: str = stores.DEFAULT_STORE) -> list[Ingredient]:
     _require_data(need_meals=False)
-    return list(INGREDIENTS.values())
+    return list(stores.ingredients_for(INGREDIENTS, store).values())
+
+
+@app.get("/stores")
+def get_stores() -> list[dict]:
+    """Stores we hold real prices for: Kroger from the CSV, others from data/prices_<store>.csv."""
+    _require_data(need_meals=False)
+    return stores.available_stores(INGREDIENTS)
 
 
 @app.get("/meals")
@@ -110,9 +117,9 @@ def get_meals(session_id: str | None = None) -> list[Meal]:
 
 
 @app.get("/meal_facts")
-def get_meal_facts(session_id: str | None = None) -> list[MealFacts]:
+def get_meal_facts(session_id: str | None = None, store: str = stores.DEFAULT_STORE) -> list[MealFacts]:
     _require_data()
-    return list(solve.meal_facts(_pool(session_id), INGREDIENTS).values())
+    return list(solve.meal_facts(_pool(session_id), stores.ingredients_for(INGREDIENTS, store)).values())
 
 
 @app.post("/solve")
@@ -126,7 +133,8 @@ def post_solve(req: SolveRequest) -> Plan:
 
     targets = nutrition.targets_for(hh)
     pool = _pool(req.session_id)
-    plan = solve.solve(pool, INGREDIENTS, hh, targets, time_limit_s=2.0)
+    store_ingredients = stores.ingredients_for(INGREDIENTS, hh.store)
+    plan = solve.solve(pool, store_ingredients, hh, targets, time_limit_s=2.0)
     if plan is None:
         # The solver relaxes variety, repeats and coverage before giving up, so this only happens
         # when nothing in the pool fits the household at all.

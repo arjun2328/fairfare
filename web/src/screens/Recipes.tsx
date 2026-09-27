@@ -108,7 +108,7 @@ export default function Recipes() {
       <div className="topbar screen-head screen-head--recipes">
         <div className="topbar__text">
           <h2>Recipes</h2>
-          <p className="subnote">Real Kroger prices · tap a recipe to see it</p>
+          <p className="subnote">Real store prices · tap a recipe to see it</p>
         </div>
         <TopActions />
       </div>

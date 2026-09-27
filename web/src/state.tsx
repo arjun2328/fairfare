@@ -11,7 +11,16 @@ import {
   type ReactNode,
 } from "react";
 import { api, ApiError } from "./api";
-import { DEFAULT_HOUSEHOLD, type Household, type Ingredient, type Meal, type MealFacts, type PantryItem, type Plan } from "./types";
+import {
+  DEFAULT_HOUSEHOLD,
+  type Household,
+  type Ingredient,
+  type Meal,
+  type MealFacts,
+  type PantryItem,
+  type Plan,
+  type StoreInfo,
+} from "./types";
 
 export type Path = "/quiz" | "/plan" | "/recipes" | "/cookbook" | "/pantry" | "/list" | "/register" | "/profile";
 const PATHS: Path[] = ["/quiz", "/plan", "/recipes", "/cookbook", "/pantry", "/list", "/register", "/profile"];
@@ -54,6 +63,9 @@ export interface AppState {
   ingredients: Record<string, Ingredient>; // id -> Ingredient, loaded once from /ingredients
   meals: Record<string, Meal>; // id -> Meal, the candidate pool from /meals
   facts: Record<string, MealFacts>; // id -> per-serving cost, nutrition and tags from /meal_facts
+  stores: StoreInfo[]; // stores we hold real prices for, from /stores
+  storePlans: Record<string, Plan | null>; // store id -> the same household solved with that store's prices
+  comparing: boolean;
   solving: boolean;
   solveError: string | null; // plain-language 422 detail; shown in the ChangedLine slot
   apiOk: boolean | null; // null = not checked yet
@@ -82,6 +94,8 @@ export interface AppActions {
   includeMeal(id: string): void;
   /** Save to / remove from the cookbook; the solver leans toward saved recipes. */
   toggleFavorite(id: string): void;
+  /** Solve the current household once per known store so the totals can be compared side by side. */
+  compareStores(): Promise<void>;
 }
 
 const Ctx = createContext<(AppState & AppActions) | null>(null);
@@ -104,6 +118,9 @@ export function StateProvider({ children }: { children: ReactNode }) {
   const [ingredients, setIngredients] = useState<Record<string, Ingredient>>({});
   const [meals, setMeals] = useState<Record<string, Meal>>({});
   const [facts, setFacts] = useState<Record<string, MealFacts>>({});
+  const [stores, setStores] = useState<StoreInfo[]>([]);
+  const [storePlans, setStorePlans] = useState<Record<string, Plan | null>>({});
+  const [comparing, setComparing] = useState(false);
   const [solving, setSolving] = useState(false);
   const [solveError, setSolveError] = useState<string | null>(null);
   const [apiOk, setApiOk] = useState<boolean | null>(null);
@@ -152,13 +169,30 @@ export function StateProvider({ children }: { children: ReactNode }) {
       .then((list) => alive && setMeals(Object.fromEntries(list.map((m) => [m.id, m]))))
       .catch(() => undefined);
     api
-      .mealFacts(sessionId)
-      .then((list) => alive && setFacts(Object.fromEntries(list.map((f) => [f.meal_id, f]))))
+      .stores()
+      .then((list) => alive && setStores(list))
       .catch(() => undefined);
     return () => {
       alive = false;
     };
   }, [sessionId]);
+
+  // Ingredient names/prices and per-meal facts follow the store the plan uses.
+  const store = household?.store ?? "kroger";
+  useEffect(() => {
+    let alive = true;
+    api
+      .ingredients(store)
+      .then((list) => alive && setIngredients(Object.fromEntries(list.map((i) => [i.id, i]))))
+      .catch(() => undefined);
+    api
+      .mealFacts(sessionId, store)
+      .then((list) => alive && setFacts(Object.fromEntries(list.map((f) => [f.meal_id, f]))))
+      .catch(() => undefined);
+    return () => {
+      alive = false;
+    };
+  }, [sessionId, store]);
 
   // ---- solving -------------------------------------------------------------------------------
   const runSolve = useCallback(async () => {
@@ -271,6 +305,26 @@ export function StateProvider({ children }: { children: ReactNode }) {
     });
   }, []);
 
+  const compareStores = useCallback(async () => {
+    const hh = householdRef.current;
+    if (!hh || stores.length === 0) return;
+    setComparing(true);
+    try {
+      const results = await Promise.all(
+        stores.map(async (s) => {
+          try {
+            return [s.id, await api.solve({ ...hh, store: s.id }, null, sessionId)] as const;
+          } catch {
+            return [s.id, null] as const;
+          }
+        }),
+      );
+      setStorePlans(Object.fromEntries(results));
+    } finally {
+      setComparing(false);
+    }
+  }, [stores, sessionId]);
+
   const toggleFavorite = useCallback((id: string) => {
     setHouseholdState((h) => {
       if (!h) return h;
@@ -289,6 +343,9 @@ export function StateProvider({ children }: { children: ReactNode }) {
       ingredients,
       meals,
       facts,
+      stores,
+      storePlans,
+      comparing,
       solving,
       solveError,
       apiOk,
@@ -305,10 +362,11 @@ export function StateProvider({ children }: { children: ReactNode }) {
       skipMeal,
       includeMeal,
       toggleFavorite,
+      compareStores,
     }),
-    [household, plan, prevPlan, pantryItems, sessionId, ingredients, meals, facts, solving, solveError, apiOk, path,
-     navigate, setHousehold, startHousehold, resetHousehold, resetAll, setPantryItems, runSolve, pinMeal, unpinMeal,
-     skipMeal, includeMeal, toggleFavorite],
+    [household, plan, prevPlan, pantryItems, sessionId, ingredients, meals, facts, stores, storePlans, comparing,
+     solving, solveError, apiOk, path, navigate, setHousehold, startHousehold, resetHousehold, resetAll,
+     setPantryItems, runSolve, pinMeal, unpinMeal, skipMeal, includeMeal, toggleFavorite, compareStores],
   );
 
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>;

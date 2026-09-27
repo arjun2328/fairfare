@@ -1,5 +1,5 @@
 // The only file that knows VITE_API_URL. One wrapper per endpoint; bodies are the Pydantic schemas as JSON.
-import type { AgentTurn, Household, Ingredient, Meal, MealFacts, PantryItem, Plan } from "./types";
+import type { AgentTurn, Household, Ingredient, Meal, MealFacts, PantryItem, Plan, StoreInfo } from "./types";
 
 export const API_URL: string = (import.meta.env.VITE_API_URL as string | undefined) ?? "http://localhost:8001";
 
@@ -39,13 +39,20 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
 export const api = {
   health: () => request<{ ok: boolean; app_name: string }>("/health"),
 
-  ingredients: () => request<Ingredient[]>("/ingredients"),
+  ingredients: (store?: string) => request<Ingredient[]>(`/ingredients${store ? `?store=${encodeURIComponent(store)}` : ""}`),
+
+  stores: () => request<StoreInfo[]>("/stores"),
 
   meals: (sessionId?: string | null) =>
     request<Meal[]>(`/meals${sessionId ? `?session_id=${encodeURIComponent(sessionId)}` : ""}`),
 
-  mealFacts: (sessionId?: string | null) =>
-    request<MealFacts[]>(`/meal_facts${sessionId ? `?session_id=${encodeURIComponent(sessionId)}` : ""}`),
+  mealFacts: (sessionId?: string | null, store?: string) => {
+    const q = new URLSearchParams();
+    if (sessionId) q.set("session_id", sessionId);
+    if (store) q.set("store", store);
+    const qs = q.toString();
+    return request<MealFacts[]>(`/meal_facts${qs ? `?${qs}` : ""}`);
+  },
 
   solve: (household: Household, prevPlan: Plan | null, sessionId: string | null) =>
     request<Plan>("/solve", {

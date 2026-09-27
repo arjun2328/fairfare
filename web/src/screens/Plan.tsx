@@ -1,3 +1,4 @@
+import StoreCompare from "../components/StoreCompare";
 import TopActions from "../components/TopActions";
 import DayStrip from "../components/DayStrip";
 import { useState } from "react";
@@ -176,6 +177,8 @@ export default function Plan() {
           )}
         </div>
       )}
+
+      <StoreCompare />
 
       <section className="daybyday" aria-label="Day by day">
         <h3 className="section-title">Day by day</h3>

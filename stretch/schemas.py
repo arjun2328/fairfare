@@ -73,6 +73,7 @@ class Household(BaseModel):
     required_meals: list[str] = []   # meals the user pinned; the solver cooks each at least once when the budget allows
     favorite_meals: list[str] = []   # the user's cookbook; the solver leans toward these (objective bonus, never a constraint)
     card_covers_snap_gap: bool = False  # opt-in: SNAP-eligible food that does not fit under the SNAP cap goes on the card, out of cash_cents
+    store: str = "kroger"            # which store's prices to plan with; see stretch/stores.py
     out_of_stock: list[str] = []
     pantry: dict[str, int] = {}
     assume_staples: bool = True
