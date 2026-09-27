@@ -37,7 +37,7 @@ green_cabbage,268,"Each (Whole head, ~1 lb)","Fresh Green Cabbage, Each",https:/
 roma_tomatoes,342,1 lb Bag,"Fresh Organic Roma Tomatoes, 1 lb Bag",https://www.walmart.com/ip/Fresh-Organic-Roma-Tomatoes-1-lb-Bag/2198784106,2026-09-27T07:28+00:00,
 green_bell_pepper,78,Each,"Fresh Green Bell Pepper, Each",https://www.walmart.com/ip/Fresh-Green-Bell-Pepper-Each/44390945,2026-09-27T07:28+00:00,size not parsed; accepted on product match
 celery,387,16 oz Bag,"Fresh Whole Organic Celery Hearts, 16 Oz Bag",https://www.walmart.com/ip/46866239,2026-09-27T07:36+00:00,
-broccoli_crowns,,,,,2026-09-27T07:36+00:00,not found
+broccoli_crowns,94,16 oz,"Great Value Frozen Cut Broccoli, 16 oz",https://www.walmart.com/ip/Great-Value-Frozen-Cut-Broccoli-16-oz/13033156,2026-09-27T07:39+00:00,
 sweet_potatoes,347,16 oz,"Marketside Fresh Sweet Potato Cubes, 16 oz",https://www.walmart.com/ip/Marketside-Fresh-Sweet-Potato-Cubes-16-oz/817773702,2026-09-27T07:21+00:00,
 cucumbers,70,Each,"Fresh Cucumber, Each",https://www.walmart.com/ip/Fresh-Cucumber-Each/44390996,2026-09-27T07:21+00:00,size not parsed; accepted on product match
 iceberg_lettuce,197,Each (head),"Fresh Iceberg Lettuce, Each",https://www.walmart.com/ip/Fresh-Iceberg-Lettuce-Each/10402650,2026-09-27T07:29+00:00,size not parsed; accepted on product match
@@ -46,15 +46,15 @@ frozen_mixed_vegetables,258,32 oz,"Great Value Mixed Vegetables, 32 oz Bag (Froz
 frozen_broccoli,94,12 oz,"Great Value Broccoli Cuts, Steamable In Bag, 12 oz (Frozen)",https://www.walmart.com/ip/Great-Value-Broccoli-Cuts-Steamable-In-Bag-12-oz-Frozen/967902497,2026-09-27T07:30+00:00,
 frozen_peas,98,12 oz,"Great Value Sweet Peas, 12 oz (Frozen) Steamable Bag, No Added Sugars",https://www.walmart.com/ip/443429457,2026-09-27T07:30+00:00,
 large_eggs,167,12 ct,"Great Value Large White Eggs, 12 Count",https://www.walmart.com/ip/145051970,2026-09-27T07:30+00:00,size not parsed; accepted on product match
-whole_milk,,,,,2026-09-27T07:36+00:00,lookup failed: Error code: 429 - {'error': {'message': 'Rate limit reached for gpt-5-search-api
+whole_milk,352,1 gal (128 fl oz),"Great Value Whole Vitamin D Milk, Gallon",https://www.walmart.com/ip/10450114,2026-09-27T07:39+00:00,
 plain_yogurt,277,32 oz,"Great Value Original Plain Nonfat Yogurt, 32 oz Tub",https://www.walmart.com/ip/10450107,2026-09-27T07:22+00:00,
 cheddar_cheese,187,8 oz,"Great Value Mild Cheddar Block Cheese, 8 oz Chunk",https://www.walmart.com/ip/34186943,2026-09-27T07:30+00:00,
 shredded_mozzarella,197,8 oz Bag,"Great Value Low-Moisture Part-Skim Mozzarella Shredded Cheese, 8 oz Bag",https://www.walmart.com/ip/10452419,2026-09-27T07:22+00:00,
 butter,289,16 oz,"Great Value Sweet Cream Salted Butter, 4 Sticks, 16 oz Box, Refrigerated",https://www.walmart.com/ip/26954458,2026-09-27T07:37+00:00,
-chicken_thighs,,,,,2026-09-27T07:37+00:00,not found
-chicken_drumsticks,,,,,2026-09-27T07:37+00:00,not found
-chicken_breast,,,,,2026-09-27T07:37+00:00,lookup failed: Error code: 429 - {'error': {'message': 'Rate limit reached for gpt-5-search-api
-whole_chicken,,,,,2026-09-27T07:37+00:00,lookup failed: Error code: 429 - {'error': {'message': 'Rate limit reached for gpt-5-search-api
+chicken_thighs,,,,,2026-09-27T07:39+00:00,not found
+chicken_drumsticks,,,,,2026-09-27T07:39+00:00,not found
+chicken_breast,,,,,2026-09-27T07:40+00:00,lookup failed: Error code: 429 - {'error': {'message': 'Rate limit reached for gpt-5-search-api
+whole_chicken,,,,,2026-09-27T07:40+00:00,lookup failed: Error code: 429 - {'error': {'message': 'Rate limit reached for gpt-5-search-api
 ground_turkey,496,16 oz,"JENNIE-O Fresh Lean Ground Turkey, 85% Lean/15% Fat, *All Natural, Refrigerated, 16 oz Plastic Tray",https://www.walmart.com/ip/JENNIE-O-Fresh-Lean-Ground-Turkey-85-Lean-15-Fat-All-Natural-Refrigerated-16-oz-Tray/155423497,2026-09-27T07:37+00:00,
 smoked_sausage,323,14 oz,"Great Value Chicken Smoked Sausage, 14 oz (Refrigerated)",https://www.walmart.com/ip/5440505153,2026-09-27T07:32+00:00,
 sliced_turkey,357,9 oz,"Great Value Oven Roasted Turkey Breast Lunchmeat, 9 oz Plastic Resealable Tub",https://www.walmart.com/ip/10315853,2026-09-27T07:32+00:00,
@@ -62,5 +62,5 @@ rotisserie_chicken,597,2.25 lb,"(Hot) Freshness Guaranteed Traditional Rotisseri
 deli_fried_chicken,797,8 Piece,"Freshness Guaranteed Fresh, Hot, Ready-to-Eat Fried Chicken, 8 Piece",https://www.walmart.com/ip/Freshness-Guaranteed-Fresh-Hot-Ready-to-Eat-Fried-Chicken-8-Pieces/300621759,2026-09-27T07:23+00:00,size not parsed; accepted on product match
 vegetable_oil,400,48 fl oz,"Great Value Vegetable Oil, Heart Healthy and Versatile, 48 fl oz Bottle",https://www.walmart.com/ip/Great-Value-Vegetable-Oil-Heart-Healthy-and-Versatile-48-fl-oz-Bottle/10451002,2026-09-27T07:23+00:00,
 salt,94,26 oz,"Great Value Iodized Salt, 26 oz",https://www.walmart.com/ip/10448316,2026-09-27T07:33+00:00,
-ground_cumin,,,,,2026-09-27T07:38+00:00,lookup failed: Error code: 429 - {'error': {'message': 'Rate limit reached for gpt-5-search-api
+ground_cumin,276,2 oz,"Bueno Foods Ground Cumin, 2 oz",https://www.walmart.com/ip/141517241,2026-09-27T07:40+00:00,
 sugar,250,4 lb,"Great Value Pure Granulated Sugar, 4 lbs",https://www.walmart.com/ip/Great-Value-Pure-Granulated-Sugar-4-lbs/10315162,2026-09-27T07:34+00:00,
