@@ -36,7 +36,7 @@ export default function DayStrip({
   return (
     <div className={`daystrip${loading ? " loading" : ""}`} aria-label="Day by day">
       {schedule.map((day) => (
-        <div key={day.day} className="daycol">
+        <div key={day.day} className={`daycol${day.day === 1 ? " daycol--today" : ""}`}>
           <div className="daycol__head">{day.day === 1 ? "Today" : `Day ${day.day}`}</div>
           {SLOTS.map(({ key, label }) => {
             const value = day[key];

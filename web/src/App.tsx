@@ -1,7 +1,9 @@
+import { useEffect, useState } from "react";
 import { StateProvider, useApp } from "./state";
 import TabBar from "./components/TabBar";
 import PlanBar from "./components/PlanBar";
 import Toast from "./components/Toast";
+import Splash from "./components/Splash";
 import Quiz from "./screens/Quiz";
 import Plan from "./screens/Plan";
 import Recipes from "./screens/Recipes";
@@ -12,8 +14,17 @@ import List from "./screens/List";
 import Register from "./screens/Register";
 
 /** One direct flow: Quiz -> Plan -> Shopping list -> Register. Recipes, Cookbook and Pantry change the plan and lead back to it. */
+const SPLASH_MS = 1100;
+
 function Shell() {
   const { path, apiOk } = useApp();
+  const [splash, setSplash] = useState(true);
+  useEffect(() => {
+    const t = window.setTimeout(() => setSplash(false), SPLASH_MS);
+    return () => window.clearTimeout(t);
+  }, []);
+  if (splash) return <Splash />;
+
   const bare = path === "/quiz" || path === "/register";
   // Pantry has its own pinned "Update my plan" button, so it does not get the bar.
   const withPlanBar = path === "/recipes" || path === "/cookbook" || path === "/profile";
