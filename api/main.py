@@ -7,8 +7,8 @@ from fastapi import FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 
-from stretch import explain, generate, nutrition, pantry, solve, stores
-from stretch.schemas import Household, Ingredient, Meal, MealFacts, PantryItem, Plan, load_ingredients
+from stretch import explain, generate, locations, nutrition, pantry, solve, stores
+from stretch.schemas import Household, Ingredient, Meal, MealFacts, NearbyStore, PantryItem, Plan, load_ingredients
 
 load_dotenv()
 
@@ -108,6 +108,16 @@ def get_stores() -> list[dict]:
     """Stores we hold real prices for: Kroger from the CSV, others from data/prices_<store>.csv."""
     _require_data(need_meals=False)
     return stores.available_stores(INGREDIENTS)
+
+
+@app.get("/nearby")
+def get_nearby(zip: str) -> list[NearbyStore]:
+    """Nearest branch of each priced chain to a ZIP (OpenStreetMap). Address and distance only; empty on failure."""
+    _require_data(need_meals=False)
+    if not zip.strip().isdigit() or len(zip.strip()) != 5:
+        raise HTTPException(422, detail="Enter a 5-digit ZIP code.")
+    ids = [s["id"] for s in stores.available_stores(INGREDIENTS)]
+    return locations.nearby_for_zip(zip.strip(), ids)
 
 
 @app.get("/meals")

@@ -1,5 +1,5 @@
 // The only file that knows VITE_API_URL. One wrapper per endpoint; bodies are the Pydantic schemas as JSON.
-import type { AgentTurn, Household, Ingredient, Meal, MealFacts, PantryItem, Plan, StoreInfo } from "./types";
+import type { AgentTurn, Household, Ingredient, Meal, MealFacts, NearbyStore, PantryItem, Plan, StoreInfo } from "./types";
 
 export const API_URL: string = (import.meta.env.VITE_API_URL as string | undefined) ?? "http://localhost:8001";
 
@@ -42,6 +42,8 @@ export const api = {
   ingredients: (store?: string) => request<Ingredient[]>(`/ingredients${store ? `?store=${encodeURIComponent(store)}` : ""}`),
 
   stores: () => request<StoreInfo[]>("/stores"),
+
+  nearby: (zip: string) => request<NearbyStore[]>(`/nearby?zip=${encodeURIComponent(zip)}`),
 
   meals: (sessionId?: string | null) =>
     request<Meal[]>(`/meals${sessionId ? `?session_id=${encodeURIComponent(sessionId)}` : ""}`),

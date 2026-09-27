@@ -67,6 +67,17 @@ export interface StoreInfo {
   source: string;
 }
 
+/** Nearest branch of a chain to the household's ZIP, from OpenStreetMap. Address and distance only. */
+export interface NearbyStore {
+  store: string;
+  name: string;
+  address: string;
+  distance_miles: number;
+  lat: number;
+  lon: number;
+  maps_url: string;
+}
+
 export interface PantryItem {
   ingredient_id: string;
   level: PantryLevel;
@@ -92,6 +103,7 @@ export interface Household {
   favorite_meals: string[]; // the user's cookbook: saved recipes the solver leans toward
   card_covers_snap_gap: boolean; // opt-in: SNAP-eligible food that does not fit under the SNAP cap goes on the card
   store: string; // which store's prices the plan uses ("kroger" by default)
+  zip_code: string; // for the nearest-branch lookup only
   out_of_stock: string[];
   pantry: Record<string, number>;
   assume_staples: boolean;
@@ -172,6 +184,7 @@ export const DEFAULT_HOUSEHOLD: Household = {
   favorite_meals: [],
   card_covers_snap_gap: false,
   store: "kroger",
+  zip_code: "",
   out_of_stock: [],
   pantry: {},
   assume_staples: true,

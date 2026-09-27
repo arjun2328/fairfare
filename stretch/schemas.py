@@ -74,6 +74,7 @@ class Household(BaseModel):
     favorite_meals: list[str] = []   # the user's cookbook; the solver leans toward these (objective bonus, never a constraint)
     card_covers_snap_gap: bool = False  # opt-in: SNAP-eligible food that does not fit under the SNAP cap goes on the card, out of cash_cents
     store: str = "kroger"            # which store's prices to plan with; see stretch/stores.py
+    zip_code: str = ""               # for the nearest-branch lookup only; the solver ignores it
     out_of_stock: list[str] = []
     pantry: dict[str, int] = {}
     assume_staples: bool = True
@@ -101,6 +102,16 @@ class DaySchedule(BaseModel):
     breakfast: str | None          # meal id, "school", or None when nothing covers it
     lunch: str | None
     dinner: str | None
+
+
+class NearbyStore(BaseModel):        # nearest branch of a chain to the household's ZIP, from OpenStreetMap
+    store: str                       # store id, e.g. "walmart"
+    name: str
+    address: str
+    distance_miles: float
+    lat: float
+    lon: float
+    maps_url: str
 
 
 class MealFacts(BaseModel):          # per-meal display facts, computed in solve.meal_facts from real ingredient data

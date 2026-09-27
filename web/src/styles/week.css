@@ -129,3 +129,7 @@
 .storecmp__name { display: flex; flex-direction: column; gap: 2px; font-size: 15px; font-weight: 600; }
 .storecmp__total { display: inline-flex; align-items: center; gap: 8px; font-family: var(--font-display); font-size: 18px; }
 .storecmp__total .ic { width: 18px; height: 18px; color: var(--green); }
+.storecmp__near { display: inline-flex; align-items: center; gap: 4px; }
+.storecmp__near .ic { width: 13px; height: 13px; }
+.storecmp__zip { margin-top: 10px; gap: 8px; }
+.storecmp__zip input { flex: 1; min-width: 0; }
