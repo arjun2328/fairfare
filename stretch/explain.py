@@ -73,7 +73,7 @@ def explain(old: Plan, new: Plan, meals, ingredients) -> str:
     if removed:
         parts.append("Dropped " + _join([name(m) for m in removed]) + " to make room.")
     if changed and len(changed) <= 3:
-        parts.append(_join([f"{name(m)} {a}× → {b}×" for m, a, b in changed]) + ".")
+        parts.append(_join([f"{name(m)} from {a}× to {b}×" for m, a, b in changed]) + ".")
     elif changed:
         parts.append(f"{len(changed)} meals are cooked a different number of times.")
 
