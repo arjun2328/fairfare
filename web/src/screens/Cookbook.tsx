@@ -1,3 +1,4 @@
+import TopActions from "../components/TopActions";
 import { useState } from "react";
 import { Heart, Leaf } from "lucide-react";
 import { useApp } from "../state";
@@ -35,9 +36,7 @@ export default function Cookbook() {
     <div className="screen">
       <div className="topbar">
         <h2>My cookbook</h2>
-        <button type="button" className="iconbtn iconbtn--gold" aria-label="Profile" onClick={() => navigate("/profile")}>
-          <Leaf className="ic" aria-hidden="true" />
-        </button>
+        <TopActions />
       </div>
       <p className="subnote cook-intro">Recipes you save show up here, and the planner leans on them when it builds your trip.</p>
 

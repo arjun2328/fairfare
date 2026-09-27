@@ -1,3 +1,4 @@
+import TopActions from "../components/TopActions";
 import { useState } from "react";
 import { Info, Leaf } from "lucide-react";
 import { useApp } from "../state";
@@ -107,9 +108,7 @@ export default function Recipes() {
           <h2>Recipes</h2>
           <p className="subnote">Real Kroger prices · tap a recipe to see it</p>
         </div>
-        <button type="button" className="iconbtn iconbtn--gold" aria-label="Profile" onClick={() => navigate("/profile")}>
-          <Leaf className="ic" aria-hidden="true" />
-        </button>
+        <TopActions />
       </div>
 
       {pinsRelaxed && (

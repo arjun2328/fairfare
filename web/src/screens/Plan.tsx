@@ -1,5 +1,7 @@
+import TopActions from "../components/TopActions";
+import DayStrip from "../components/DayStrip";
 import { useState } from "react";
-import { AlertCircle, Leaf, ShoppingBasket } from "lucide-react";
+import { AlertCircle, Leaf } from "lucide-react";
 import { daysUntil, fmtDate, fmtMoney } from "../format";
 import { useApp } from "../state";
 import type { Household, Meal, MealFacts, Plan as PlanT, Slot } from "../types";
@@ -7,8 +9,6 @@ import { uncoveredSentence } from "../components/PaymentCard";
 import PlanForm from "../components/PlanForm";
 import MealCard from "../components/MealCard";
 import MealDetail from "../components/MealDetail";
-import TodayRow from "../components/TodayRow";
-import WeekView from "../components/WeekView";
 import AdjustSheet from "../components/AdjustSheet";
 
 const SLOT_ORDER: Record<Slot, number> = { breakfast: 0, lunch: 1, dinner: 2 };
@@ -84,22 +84,7 @@ export default function Plan() {
     <div className="screen">
       <div className="topbar">
         <h2>Your plan</h2>
-        <div className="row" style={{ gap: 8, marginLeft: "auto" }}>
-          <button type="button" className="iconbtn iconbtn--gold" aria-label="Profile" onClick={() => navigate("/profile")}>
-            <Leaf className="ic" aria-hidden="true" />
-          </button>
-          <button
-            type="button"
-            className="iconbtn"
-            style={{ width: 44, height: 44, marginLeft: 0, background: "var(--green-deep)", color: "#F1EEDD" }}
-            aria-label="Shopping list"
-            title="Shopping list"
-            disabled={!plan}
-            onClick={() => navigate("/list")}
-          >
-            <ShoppingBasket className="ic" style={{ width: 20, height: 20 }} aria-hidden="true" />
-          </button>
-        </div>
+        <TopActions />
       </div>
 
       <section className={`hero${plan && solving ? " loading" : ""}`} aria-label="This trip">
@@ -192,6 +177,11 @@ export default function Plan() {
         </div>
       )}
 
+      <section className="daybyday" aria-label="Day by day">
+        <h3 className="section-title">Day by day</h3>
+        <DayStrip schedule={plan?.schedule ?? []} meals={meals} loading={solving} onOpen={setOpenMeal} />
+      </section>
+
       {plan && chosen.length > 0 && (
         <section className="triplist" aria-label="Meals this trip">
           <h3 className="section-title">Your meals ({chosen.length})</h3>
@@ -217,12 +207,6 @@ export default function Plan() {
           </button>
         </section>
       )}
-
-      <section className="daybyday" aria-label="Day by day">
-        <h3 className="section-title">Day by day</h3>
-        <TodayRow day={plan?.schedule[0]} meals={meals} loading={solving} onOpen={setOpenMeal} />
-        {plan && <WeekView schedule={plan.schedule} meals={meals} onNotForMe={skipMeal} onOpen={setOpenMeal} loading={solving} />}
-      </section>
 
       {plan && staples.length > 0 && (
         <p className="basics">

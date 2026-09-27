@@ -1,3 +1,4 @@
+import TopActions from "../components/TopActions";
 // F3: what's already in the kitchen, so the solver only buys the gap. One task top to bottom:
 // type or scan -> review the "On hand" chips (the chip is the confirmation step) -> "Update my plan".
 // Levels only, never grams claimed from a photo; grams come back from POST /pantry/grams and land in
@@ -167,6 +168,7 @@ export default function Pantry() {
     <div className="screen pantry">
       <div className="topbar">
         <h2>Your pantry</h2>
+        <TopActions />
       </div>
       <p className="subnote pantry-lede">We only buy what you don't have. Amounts are estimates.</p>
 
