@@ -85,13 +85,13 @@
 .quiz-follow { margin-top: 22px; padding-top: 16px; border-top: 1px solid var(--line); }
 
 /* ---- coloured header band per screen, so each tab reads as its own place ---- */
-.screen-head { margin: calc(-20px - env(safe-area-inset-top, 0px)) -20px 18px; padding: calc(18px + env(safe-area-inset-top, 0px)) 20px 18px; background: var(--head, var(--green-deep)); color: #F1EEDD; border-radius: 0 0 22px 22px; }
+.screen-head { margin: calc(-20px - env(safe-area-inset-top, 0px)) -20px 18px; padding: calc(18px + env(safe-area-inset-top, 0px)) 20px 18px; background: var(--head, var(--green-deep)); color: #F1EEDD; border-radius: 0; }
 .screen-head h2 { color: #F1EEDD; }
 .screen-head .subnote { color: rgba(241, 238, 221, 0.75); }
 .screen-head .iconbtn--dark { background: rgba(255, 255, 255, 0.16); color: #F1EEDD; }
 .screen-head .quiz-back { color: #F1EEDD; }
 .screen-head--plan { --head: var(--green-deep); margin-bottom: 0; border-radius: 0; padding-bottom: 4px; }
-.screen-head--plan + .hero { margin: 0 -20px 18px; border-radius: 0 0 22px 22px; padding-top: 10px; }
+.screen-head--plan + .hero { margin: 0 -20px 18px; border-radius: 0; padding-top: 10px; }
 .screen-head--recipes { --head: #5B3A2E; }
 .screen-head--cookbook { --head: var(--berry); }
 .screen-head--pantry { --head: #2F5D50; }
