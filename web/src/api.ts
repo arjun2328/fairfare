@@ -65,6 +65,9 @@ export const api = {
   pantryDetect: (body: { image_b64?: string | null; text?: string | null }) =>
     request<PantryItem[]>("/pantry/detect", { method: "POST", body: JSON.stringify(body) }),
 
+  pantryVoice: (body: { audio_b64: string; mime_type: string }) =>
+    request<{ transcript: string; items: PantryItem[] }>("/pantry/voice", { method: "POST", body: JSON.stringify(body) }),
+
   pantryGrams: (items: PantryItem[]) =>
     request<Record<string, number>>("/pantry/grams", { method: "POST", body: JSON.stringify({ items }) }),
 

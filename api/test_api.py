@@ -72,3 +72,29 @@ def test_pantry_grams(client):
     r = client.post("/pantry/grams", json={"items": items})
     assert r.status_code == 200
     assert r.json() == {"rice": INGREDIENTS["rice"].package_g // 2}
+
+
+def test_pantry_voice_transcribes_then_detects(client, monkeypatch):
+    import base64
+
+    from stretch import pantry, speech
+    from stretch.schemas import PantryItem
+
+    monkeypatch.setattr(speech, "transcribe", lambda audio, mime_type="audio/webm": "rice and eggs")
+    monkeypatch.setattr(
+        pantry, "detect_from_text",
+        lambda text, ings: [PantryItem(ingredient_id="rice", level="full", source="text")],
+    )
+    body = {"audio_b64": base64.b64encode(b"x" * 2000).decode(), "mime_type": "audio/webm"}
+    r = client.post("/pantry/voice", json=body)
+    assert r.status_code == 200
+    data = r.json()
+    assert data["transcript"] == "rice and eggs"
+    assert [i["ingredient_id"] for i in data["items"]] == ["rice"]
+
+
+def test_pantry_voice_rejects_tiny_clips(client):
+    import base64
+
+    r = client.post("/pantry/voice", json={"audio_b64": base64.b64encode(b"tiny").decode()})
+    assert r.status_code == 422

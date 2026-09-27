@@ -7,7 +7,7 @@ from fastapi import FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 
-from stretch import explain, generate, locations, nutrition, pantry, solve, stores
+from stretch import explain, generate, locations, nutrition, pantry, solve, speech, stores
 from stretch.schemas import Household, Ingredient, Meal, MealFacts, NearbyStore, PantryItem, Plan, load_ingredients
 
 load_dotenv()
@@ -67,6 +67,16 @@ class SolveRequest(BaseModel):
 class DetectRequest(BaseModel):
     image_b64: str | None = None
     text: str | None = None
+
+
+class VoiceRequest(BaseModel):
+    audio_b64: str
+    mime_type: str = "audio/webm"
+
+
+class VoiceResponse(BaseModel):
+    transcript: str
+    items: list[PantryItem]
 
 
 class GramsRequest(BaseModel):
@@ -179,6 +189,26 @@ def post_pantry_detect(req: DetectRequest) -> list[PantryItem]:
             raise HTTPException(422, detail="image_b64 is not valid base64.")
         return pantry.detect_from_image(image, INGREDIENTS)
     return pantry.detect_from_text(req.text, INGREDIENTS)
+
+
+@app.post("/pantry/voice")
+def post_pantry_voice(req: VoiceRequest) -> VoiceResponse:
+    """Spoken pantry input: transcribe the clip (ElevenLabs), then reuse the text-detection path."""
+    _require_data(need_meals=False)
+    try:
+        audio = base64.b64decode(req.audio_b64.split(",", 1)[-1], validate=False)
+    except Exception:
+        raise HTTPException(422, detail="audio_b64 is not valid base64.")
+    if len(audio) < 1000:
+        raise HTTPException(422, detail="That clip was too short to hear. Try again closer to the mic.")
+    try:
+        transcript = speech.transcribe(audio, req.mime_type)
+    except Exception as exc:
+        print(f"voice: transcription failed: {exc}")
+        raise HTTPException(502, detail="Couldn't hear that. Try again, or type what you have.")
+    if not transcript:
+        return VoiceResponse(transcript="", items=[])
+    return VoiceResponse(transcript=transcript, items=pantry.detect_from_text(transcript, INGREDIENTS))
 
 
 @app.post("/pantry/grams")

@@ -35,3 +35,23 @@
 .pantry-cta { margin-top: auto; padding-top: 16px; }
 .pantry-update-msg { margin-top: 8px; text-align: center; }
 .pantry-disclaim { margin-top: 12px; }
+
+/* ---- voice input: mic at the left of the composer row ---- */
+.voice-wrap { display: flex; flex-direction: column; align-items: center; gap: 2px; flex: none; }
+.voice-btn {
+  width: 44px; height: 44px; min-width: 44px; min-height: 44px; border: none; border-radius: 50%;
+  background: var(--green); color: #fff; display: inline-flex; align-items: center; justify-content: center;
+  cursor: pointer; font-size: 15px; line-height: 1;
+}
+.voice-btn .ic { width: 22px; height: 22px; }
+.voice-btn--rec { background: var(--red); animation: voice-pulse 1.6s ease-out infinite; }
+.voice-btn--off { opacity: 0.5; }
+.voice-timer { font-size: 11px; color: var(--ink-soft); text-align: center; font-variant-numeric: tabular-nums; }
+@keyframes voice-pulse {
+  0% { box-shadow: 0 0 0 0 color-mix(in srgb, var(--red) 35%, transparent); }
+  70% { box-shadow: 0 0 0 10px color-mix(in srgb, var(--red) 0%, transparent); }
+  100% { box-shadow: 0 0 0 0 color-mix(in srgb, var(--red) 0%, transparent); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .voice-btn--rec { animation: none; box-shadow: 0 0 0 3px color-mix(in srgb, var(--red) 30%, transparent); }
+}

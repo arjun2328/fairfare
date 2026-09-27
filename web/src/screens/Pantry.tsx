@@ -1,6 +1,6 @@
 import TopActions from "../components/TopActions";
 // F3: what's already in the kitchen, so the solver only buys the gap. One task top to bottom:
-// type or scan -> review the "On hand" chips (the chip is the confirmation step) -> "Update my plan".
+// speak, type or scan -> review the "On hand" chips (the chip is the confirmation step) -> "Update my plan".
 // Levels only, never grams claimed from a photo; grams come back from POST /pantry/grams and land in
 // household.pantry, then we re-solve and return the user to the plan.
 import { useEffect, useRef, useState, type ChangeEvent, type KeyboardEvent } from "react";
@@ -9,6 +9,7 @@ import { useApp } from "../state";
 import { api, ApiError } from "../api";
 import StapleChips from "../components/StapleChips";
 import PantryChecklist from "../components/PantryChecklist";
+import VoiceButton from "../components/VoiceButton";
 import type { PantryItem } from "../types";
 
 const MAX_DIM = 1024;
@@ -53,7 +54,7 @@ async function fileToBase64Jpeg(file: File): Promise<string> {
 }
 
 const NOTHING_RECOGNIZED = "Nothing from our list matched. Try other words, or tap Add item.";
-const COMPOSER_DEFAULT = "Say what you have, like: rice, eggs, half a bag of spinach.";
+const COMPOSER_DEFAULT = "Tap the mic and say it, or type items, comma separated.";
 const PHOTO_FAILED = "Couldn't read that photo. Try more light, or type what you have.";
 
 export default function Pantry() {
@@ -138,6 +139,18 @@ export default function Pantry() {
     }
   }
 
+  /** Voice result: merge detected items like typed text; keep the transcript as the hint line. */
+  function handleVoiceResult(transcript: string, items: PantryItem[]) {
+    if (items.length > 0) {
+      setPantryItems(mergeItems(pantryItems, items));
+      setTextMsg(transcript ? `Heard: "${transcript}"` : null);
+    } else if (transcript) {
+      setTextMsg(`Heard: "${transcript}" — nothing from our list matched. Try other words, or tap Add item.`);
+    } else {
+      setTextMsg(NOTHING_RECOGNIZED);
+    }
+  }
+
   function onComposerKeyDown(e: KeyboardEvent<HTMLInputElement>) {
     if (e.key === "Enter") {
       e.preventDefault();
@@ -174,6 +187,7 @@ export default function Pantry() {
 
       <section className="composer">
         <div className="composer-row">
+          <VoiceButton onResult={handleVoiceResult} onError={setTextMsg} disabled={textLoading} />
           <input
             type="text"
             placeholder="Type items, comma separated"
