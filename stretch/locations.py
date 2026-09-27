@@ -1,4 +1,4 @@
-"""Nearest branch of a chain to a ZIP code, from OpenStreetMap (Nominatim + Overpass; free, keyless).
+"""Nearest branch of each chain to a ZIP code, from OpenStreetMap (Nominatim + Overpass; free, keyless).
 Address and distance only. Never prices: those stay chain-level online listings."""
 import math
 import time
@@ -8,9 +8,10 @@ import requests
 from .schemas import NearbyStore
 
 _UA = {"User-Agent": "FairFare-hackathon/1.0 (meal planner demo)"}
-_BRAND_QUERY = {"kroger": "Kroger", "walmart": "Walmart", "aldi": "ALDI", "target": "Target", "publix": "Publix"}
-_cache: dict[tuple[str, str], tuple[float, NearbyStore | None]] = {}
+_BRANDS = {"kroger": "Kroger", "walmart": "Walmart", "aldi": "ALDI", "target": "Target", "publix": "Publix"}
+_OVERPASS = ["https://overpass-api.de/api/interpreter", "https://overpass.kumi.systems/api/interpreter"]
 _geo_cache: dict[str, tuple[float, float] | None] = {}
+_near_cache: dict[str, tuple[float, dict[str, NearbyStore]]] = {}
 CACHE_S = 6 * 3600
 
 
@@ -26,8 +27,9 @@ def geocode_zip(zip_code: str) -> tuple[float, float] | None:
         r.raise_for_status()
         hits = r.json()
         out = (float(hits[0]["lat"]), float(hits[0]["lon"])) if hits else None
-    except Exception:
-        out = None
+    except Exception as exc:
+        print(f"locations: geocode {z} failed: {str(exc)[:100]}", flush=True)
+        return None  # do not cache a hiccup
     _geo_cache[z] = out
     return out
 
@@ -43,43 +45,65 @@ def _address(tags: dict) -> str:
     return ", ".join(x for x in parts if x) or (tags.get("name") or "")
 
 
-def nearest(store: str, lat: float, lon: float, radius_m: int = 30000) -> NearbyStore | None:
-    """Closest OSM supermarket tagged with the chain's brand within radius_m; None if none or on any error."""
-    brand = _BRAND_QUERY.get(store)
-    if not brand:
-        return None
-    key = (store, f"{lat:.3f},{lon:.3f}")
-    hit = _cache.get(key)
+def _brand_of(tags: dict, store_ids: list[str]) -> str | None:
+    label = f"{tags.get('brand', '')} {tags.get('name', '')}".lower()
+    for sid in store_ids:
+        if _BRANDS[sid].lower() in label:
+            return sid
+    return None
+
+
+def nearest_all(store_ids: list[str], lat: float, lon: float, radius_m: int = 25000) -> dict[str, NearbyStore]:
+    """One Overpass query for every chain at once (the public server rate-limits repeated calls); returns
+    store id -> nearest branch. Chains with no hit are absent. Empty on any service failure, not cached."""
+    ids = [s for s in store_ids if s in _BRANDS]
+    if not ids:
+        return {}
+    key = f"{lat:.3f},{lon:.3f}:{','.join(sorted(ids))}"
+    hit = _near_cache.get(key)
     if hit and time.time() - hit[0] < CACHE_S:
         return hit[1]
+    pattern = "|".join(_BRANDS[s] for s in ids)
     query = (
-        f'[out:json][timeout:20];(node["shop"]["brand"~"{brand}",i](around:{radius_m},{lat},{lon});'
-        f'way["shop"]["brand"~"{brand}",i](around:{radius_m},{lat},{lon});'
-        f'node["shop"]["name"~"{brand}",i](around:{radius_m},{lat},{lon});'
-        f'way["shop"]["name"~"{brand}",i](around:{radius_m},{lat},{lon}););out center tags;'
+        f'[out:json][timeout:15];('
+        f'nwr["shop"]["brand"~"^({pattern})",i](around:{radius_m},{lat},{lon});'
+        f'nwr["shop"]["name"~"^({pattern})",i](around:{radius_m},{lat},{lon});'
+        f');out center tags;'
     )
-    result: NearbyStore | None = None
-    try:
-        r = requests.post("https://overpass-api.de/api/interpreter", data={"data": query}, headers=_UA, timeout=25)
-        r.raise_for_status()
-        best = None
-        for el in r.json().get("elements", []):
-            plat = el.get("lat") or (el.get("center") or {}).get("lat")
-            plon = el.get("lon") or (el.get("center") or {}).get("lon")
-            if plat is None or plon is None:
-                continue
-            d = _miles(lat, lon, plat, plon)
-            if best is None or d < best[0]:
-                best = (d, plat, plon, el.get("tags", {}))
-        if best:
-            d, plat, plon, tags = best
-            result = NearbyStore(store=store, name=tags.get("name") or brand, address=_address(tags),
-                                 distance_miles=round(d, 1), lat=plat, lon=plon,
-                                 maps_url=f"https://www.google.com/maps/search/?api=1&query={plat},{plon}")
-    except Exception:
-        return None  # service hiccup: do not cache, so the next request tries again
-    _cache[key] = (time.time(), result)
-    return result
+    elements = None
+    for url in _OVERPASS:
+        try:
+            r = requests.post(url, data={"data": query}, headers=_UA, timeout=25)
+            r.raise_for_status()
+            elements = r.json().get("elements", [])
+            break
+        except Exception as exc:
+            print(f"locations: overpass {url} failed: {str(exc)[:100]}", flush=True)
+    if elements is None:
+        return {}
+    best: dict[str, tuple[float, float, float, dict]] = {}
+    for el in elements:
+        plat = el.get("lat") or (el.get("center") or {}).get("lat")
+        plon = el.get("lon") or (el.get("center") or {}).get("lon")
+        tags = el.get("tags", {})
+        sid = _brand_of(tags, ids)
+        if plat is None or plon is None or sid is None:
+            continue
+        d = _miles(lat, lon, plat, plon)
+        if sid not in best or d < best[sid][0]:
+            best[sid] = (d, plat, plon, tags)
+    out = {
+        sid: NearbyStore(store=sid, name=tags.get("name") or _BRANDS[sid], address=_address(tags),
+                         distance_miles=round(d, 1), lat=plat, lon=plon,
+                         maps_url=f"https://www.google.com/maps/search/?api=1&query={plat},{plon}")
+        for sid, (d, plat, plon, tags) in best.items()
+    }
+    _near_cache[key] = (time.time(), out)
+    return out
+
+
+def nearest(store: str, lat: float, lon: float) -> NearbyStore | None:
+    return nearest_all([store], lat, lon).get(store)
 
 
 def nearby_for_zip(zip_code: str, store_ids: list[str]) -> list[NearbyStore]:
@@ -87,9 +111,5 @@ def nearby_for_zip(zip_code: str, store_ids: list[str]) -> list[NearbyStore]:
     geo = geocode_zip(zip_code)
     if not geo:
         return []
-    out: list[NearbyStore] = []
-    for sid in store_ids:
-        hit = nearest(sid, *geo)
-        if hit:
-            out.append(hit)
-    return out
+    found = nearest_all(store_ids, *geo)
+    return [found[s] for s in store_ids if s in found]
