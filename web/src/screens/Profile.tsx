@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { ChevronLeft, ChevronRight, Leaf } from "lucide-react";
+import { ChevronLeft, ChevronRight, UserRound } from "lucide-react";
 import { useApp } from "../state";
 import type { Diet, Equipment } from "../types";
 import AdjustSheet from "../components/AdjustSheet";
@@ -76,7 +76,7 @@ export default function Profile() {
 
       <div className="profile-head">
         <div className="profile-avatar" aria-hidden="true">
-          <Leaf className="ic" />
+          <UserRound className="ic" />
         </div>
         <h3>Household of {household.people}</h3>
       </div>

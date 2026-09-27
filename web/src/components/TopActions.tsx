@@ -1,7 +1,7 @@
-import { Leaf, ShoppingBasket } from "lucide-react";
+import { ShoppingBasket, UserRound } from "lucide-react";
 import { useApp } from "../state";
 
-/** The two shortcuts every main screen carries top-right: Shopping list (dark basket), then Profile (gold leaf). */
+/** The two shortcuts every main screen carries top-right: Shopping list (dark basket), then Profile (gold person). */
 export default function TopActions() {
   const { plan, navigate } = useApp();
   return (
@@ -17,7 +17,7 @@ export default function TopActions() {
         <ShoppingBasket className="ic" aria-hidden="true" />
       </button>
       <button type="button" className="iconbtn iconbtn--gold" aria-label="Profile" title="Profile" onClick={() => navigate("/profile")}>
-        <Leaf className="ic" aria-hidden="true" />
+        <UserRound className="ic" aria-hidden="true" />
       </button>
     </div>
   );
