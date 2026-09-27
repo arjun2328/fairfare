@@ -218,3 +218,20 @@ def test_saved_recipes_are_never_cooked_less():
         assert fav is not None
         assert fav.meals.get(m.id, 0) >= base.meals.get(m.id, 0)
         assert fav.ebt_cents <= hh.ebt_cents and fav.cash_cents <= hh.cash_cents
+
+
+def test_card_can_cover_snap_gap_only_when_opted_in():
+    from stretch.solve import _serving_cents
+    priciest = max(MEALS, key=lambda m: _serving_cents(m, INGREDIENTS) * m.servings)
+    base = make_household(ebt_cents=300, cash_cents=5000, required_meals=[priciest.id])
+    plan = solve(MEALS, INGREDIENTS, base, targets_for(base))
+    assert plan is not None and "pins" in plan.relaxed and plan.snap_overflow_cents == 0
+
+    hh = make_household(ebt_cents=300, cash_cents=5000, required_meals=[priciest.id], card_covers_snap_gap=True)
+    plan = solve(MEALS, INGREDIENTS, hh, targets_for(hh))
+    assert plan is not None
+    assert plan.meals.get(priciest.id, 0) >= 1
+    assert plan.ebt_cents <= hh.ebt_cents
+    assert plan.cash_cents <= hh.cash_cents
+    assert plan.basket_cents == plan.ebt_cents + plan.cash_cents == sum(c.line_cents for c in plan.cart)
+    assert plan.snap_overflow_cents > 0

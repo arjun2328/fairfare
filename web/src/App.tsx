@@ -15,7 +15,8 @@ import Register from "./screens/Register";
 function Shell() {
   const { path, apiOk } = useApp();
   const bare = path === "/quiz" || path === "/register";
-  const withPlanBar = path === "/recipes" || path === "/cookbook" || path === "/pantry" || path === "/profile";
+  // Pantry has its own pinned "Update my plan" button, so it does not get the bar.
+  const withPlanBar = path === "/recipes" || path === "/cookbook" || path === "/profile";
   let screen;
   switch (path) {
     case "/quiz":

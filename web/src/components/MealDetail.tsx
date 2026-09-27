@@ -19,6 +19,8 @@ export default function MealDetail({
   favorite,
   inTrip,
   pinnedNotFit,
+  canPayWithCard,
+  onPayWithCard,
   excluded,
   onClose,
   onToggleFavorite,
@@ -34,6 +36,8 @@ export default function MealDetail({
   favorite: boolean;
   inTrip: boolean;
   pinnedNotFit: boolean;
+  canPayWithCard?: boolean; // the household has cash and has not yet opted in to card overflow
+  onPayWithCard?: () => void;
   excluded: boolean;
   onClose: () => void;
   onToggleFavorite: (id: string) => void;
@@ -74,14 +78,21 @@ export default function MealDetail({
     );
   } else if (pinnedNotFit) {
     primary = (
-      <button
-        type="button"
-        className="btn-line meal-detail__main meal-detail__main--dim"
-        aria-label="Remove from trip"
-        onClick={() => onRemove(meal.id)}
-      >
-        Didn't fit this trip's budget
-      </button>
+      <span className="meal-detail__main" style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+        {canPayWithCard && onPayWithCard && (
+          <button type="button" className="btn-primary" onClick={onPayWithCard}>
+            Use my card for what SNAP can't cover
+          </button>
+        )}
+        <button
+          type="button"
+          className="btn-line meal-detail__main--dim"
+          aria-label="Remove from trip"
+          onClick={() => onRemove(meal.id)}
+        >
+          {canPayWithCard ? "Didn't fit your SNAP · remove" : "Didn't fit this trip's budget"}
+        </button>
+      </span>
     );
   } else {
     primary = (

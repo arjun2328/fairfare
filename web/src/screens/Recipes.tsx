@@ -204,6 +204,8 @@ export default function Recipes() {
         favorite={openMeal ? favorites.has(openMeal.id) : false}
         inTrip={openMeal ? isInTrip(openMeal.id) : false}
         pinnedNotFit={openMeal ? isPinnedNotFit(openMeal.id) : false}
+        canPayWithCard={!!household && household.cash_cents > 0 && !household.card_covers_snap_gap}
+        onPayWithCard={() => setHousehold({ card_covers_snap_gap: true })}
         excluded={openMeal ? excluded.has(openMeal.id) : false}
         onClose={() => setOpenMeal(null)}
         onToggleFavorite={toggleFavorite}

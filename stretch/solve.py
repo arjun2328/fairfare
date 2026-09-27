@@ -18,6 +18,7 @@ SLOTS = ("breakfast", "lunch", "dinner")
 UNCOVERED_PENALTY = 1_000_000  # per serving, in the x100-scaled objective; dwarfs palatability
 VARIETY_BONUS = 20_000  # per distinct meal, only once the variety floor has been relaxed
 FAVORITE_BONUS = 20_000  # per batch of a saved (cookbook) recipe: worth about two palatability points
+OVERFLOW_PENALTY = 60  # per cent of SNAP-eligible food put on the card: only worth it to honour a pin, never for extras
 
 
 def _candidates(meals: list[Meal], ingredients: dict[str, Ingredient],
@@ -217,11 +218,20 @@ def solve(meals: list[Meal],
 
         ebt_terms = [y[i] * ingredients[i].price_cents for i in used_ids if ingredients[i].ebt_eligible]
         cash_terms = [y[i] * ingredients[i].price_cents for i in used_ids if not ingredients[i].ebt_eligible]
-        if ebt_terms:
-            model.Add(sum(ebt_terms) <= snap_cap)
-        if cash_terms:
-            model.Add(sum(cash_terms) <= household.cash_cents)
-        spend = sum(ebt_terms + cash_terms)
+        eligible_spend = sum(ebt_terms) if ebt_terms else 0
+        ineligible_spend = sum(cash_terms) if cash_terms else 0
+        overflow = 0
+        if household.card_covers_snap_gap and ebt_terms:
+            # SNAP first; eligible food that does not fit under the cap goes on the card, out of cash_cents.
+            overflow = model.NewIntVar(0, max(0, household.cash_cents), "snap_overflow")
+            model.Add(eligible_spend - overflow <= snap_cap)
+            model.Add(ineligible_spend + overflow <= household.cash_cents)
+        else:
+            if ebt_terms:
+                model.Add(eligible_spend <= snap_cap)
+            if cash_terms:
+                model.Add(ineligible_spend <= household.cash_cents)
+        spend = eligible_spend + ineligible_spend
 
         def _max_total(n: str) -> int:
             return max(1, sum(max(0, coef[n][m.id]) * max_repeat for m in cand))
@@ -249,6 +259,7 @@ def solve(meals: list[Meal],
             - 100 * excess_sodium100
             - 500 * excess_sugar
             + (budget - spend)
+            - OVERFLOW_PENALTY * overflow
             - UNCOVERED_PENALTY * sum(uncovered.values())
         )
 
@@ -314,6 +325,12 @@ def solve(meals: list[Meal],
         cart.append(PlanItem(ingredient_id=i, packages=n, line_cents=line,
                              ebt_eligible=ing.ebt_eligible, aisle=ing.aisle))
 
+    snap_overflow_cents = 0
+    if household.card_covers_snap_gap and ebt_cents > snap_cap:
+        # The register runs EBT first up to the cap; the rest of the eligible food goes on the card.
+        snap_overflow_cents = ebt_cents - snap_cap
+        ebt_cents = snap_cap
+        cash_cents += snap_overflow_cents
     basket_cents = ebt_cents + cash_cents
     used_g = {i: sum(chosen.get(m.id, 0) * m.ingredients[i] for m in cand if i in m.ingredients) for i in used_ids}
     from_pantry = {i: min(pantry_g[i], used_g[i]) for i in used_ids if min(pantry_g[i], used_g[i]) > 0}
@@ -376,4 +393,5 @@ def solve(meals: list[Meal],
         staples_assumed=staples_assumed,
         meal_serving_cents=meal_serving_cents,
         meal_cost_cents={mid: meal_serving_cents.get(mid, 0) * by_id[mid].servings * n for mid, n in chosen.items()},
+        snap_overflow_cents=snap_overflow_cents,
     )

@@ -72,6 +72,7 @@ class Household(BaseModel):
     accepted_meals: list[str] | None = None
     required_meals: list[str] = []   # meals the user pinned; the solver cooks each at least once when the budget allows
     favorite_meals: list[str] = []   # the user's cookbook; the solver leans toward these (objective bonus, never a constraint)
+    card_covers_snap_gap: bool = False  # opt-in: SNAP-eligible food that does not fit under the SNAP cap goes on the card, out of cash_cents
     out_of_stock: list[str] = []
     pantry: dict[str, int] = {}
     assume_staples: bool = True
@@ -143,6 +144,7 @@ class Plan(BaseModel):
     staples_assumed: list[str] = []       # ingredient ids treated as already on hand
     meal_serving_cents: dict[str, int] = {}  # meal_id -> ingredient cost per serving, pro-rated by weight from package prices
     meal_cost_cents: dict[str, int] = {}     # chosen meal_id -> approximate ingredient cost of all its batches this trip
+    snap_overflow_cents: int = 0             # SNAP-eligible food charged to the card because it did not fit under the SNAP cap
 
 
 def _to_bool(value: str, field: str, row_no: int) -> bool:

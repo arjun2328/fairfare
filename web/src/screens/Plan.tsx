@@ -208,6 +208,21 @@ export default function Plan() {
         </section>
       )}
 
+      {plan && plan.snap_overflow_cents > 0 && (
+        <div className="infobox" role="status" style={{ flexDirection: "column", gap: 10 }}>
+          <div className="row" style={{ gap: 10, alignItems: "flex-start" }}>
+            <AlertCircle className="ic" aria-hidden="true" />
+            <span>
+              <span className="money-cash">{fmtMoney(plan.snap_overflow_cents)}</span> of SNAP-eligible food goes on your card this trip
+              because it did not fit under your SNAP. That is your own money.
+            </span>
+          </div>
+          <button type="button" className="btn-line" onClick={() => setHousehold({ card_covers_snap_gap: false })}>
+            Keep it to SNAP only
+          </button>
+        </div>
+      )}
+
       {plan && staples.length > 0 && (
         <p className="basics">
           Basics you have: {staples.join(", ")}.{" "}
@@ -234,6 +249,8 @@ export default function Plan() {
         favorite={openId ? household.favorite_meals.includes(openId) : false}
         inTrip={openId ? inTrip(openId) : false}
         pinnedNotFit={openId ? !solving && (plan?.relaxed ?? []).includes("pins") && household.required_meals.includes(openId) && !inTrip(openId) : false}
+        canPayWithCard={household.cash_cents > 0 && !household.card_covers_snap_gap}
+        onPayWithCard={() => setHousehold({ card_covers_snap_gap: true })}
         excluded={openId ? household.excluded_meals.includes(openId) : false}
         onClose={() => setOpenMeal(null)}
         onToggleFavorite={toggleFavorite}

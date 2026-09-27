@@ -81,6 +81,7 @@ export interface Household {
   accepted_meals: string[] | null;
   required_meals: string[]; // meals the user pinned: the solver cooks each at least once if it can
   favorite_meals: string[]; // the user's cookbook: saved recipes the solver leans toward
+  card_covers_snap_gap: boolean; // opt-in: SNAP-eligible food that does not fit under the SNAP cap goes on the card
   out_of_stock: string[];
   pantry: Record<string, number>;
   assume_staples: boolean;
@@ -133,6 +134,7 @@ export interface Plan {
   staples_assumed: string[]; // ingredient ids treated as already on hand
   meal_serving_cents: Record<string, number>; // meal_id -> ingredient cost per serving, pro-rated by weight from package prices
   meal_cost_cents: Record<string, number>; // chosen meal_id -> approximate ingredient cost for all batches this trip
+  snap_overflow_cents: number; // SNAP-eligible food charged to the card because it did not fit under the SNAP cap
 }
 
 export interface AgentTurn {
@@ -158,6 +160,7 @@ export const DEFAULT_HOUSEHOLD: Household = {
   accepted_meals: null,
   required_meals: [],
   favorite_meals: [],
+  card_covers_snap_gap: false,
   out_of_stock: [],
   pantry: {},
   assume_staples: true,

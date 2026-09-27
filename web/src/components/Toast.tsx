@@ -38,7 +38,10 @@ export default function Toast() {
       } else if (m && household && m.prep_min > household.max_prep_min) {
         text = `${name} takes ${m.prep_min} minutes, over your ${household.max_prep_min}-minute limit. Raise it in Profile.`;
       } else {
-        text = `${name} didn't fit this trip's ${fmtMoney(plan.trip_snap_cap_cents)}. Raise your balance or remove a meal.`;
+        const cardOffer = household && household.cash_cents > 0 && !household.card_covers_snap_gap
+          ? " Or open the recipe and let your card cover what SNAP can't."
+          : "";
+        text = `${name} didn't fit this trip's ${fmtMoney(plan.trip_snap_cap_cents)} of SNAP. Raise your balance or remove a meal.${cardOffer}`;
       }
     }
 
