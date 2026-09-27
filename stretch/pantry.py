@@ -28,26 +28,39 @@ def _parse(text: str, ingredients: dict[str, Ingredient], source: str) -> list[P
         return []
 
     out: list[PantryItem] = []
+    seen: set[str] = set()
     for raw in payload:
         if not isinstance(raw, dict):
             continue
         iid = str(raw.get("ingredient_id", "")).strip()
         level = str(raw.get("level", "full")).strip().lower()
-        if iid not in ingredients or level not in _LEVELS:
-            continue
+        if iid not in ingredients or level not in _LEVELS or iid in seen:
+            continue  # unknown id, bad level, or the same ingredient spotted twice (two peppers -> one chip)
+        seen.add(iid)
         out.append(PantryItem(ingredient_id=iid, level=level, source=source))
     return out
 
 
 def detect_from_image(image: bytes, ingredients: dict[str, Ingredient]) -> list[PantryItem]:
     """Read a shelf photo into levels the user will confirm; never grams."""
+    # Two steps in one call: name what is visible first, then map. Asking for the mapping alone makes the
+    # model too cautious and it returns nothing for ordinary produce photos.
     prompt = (
-        "List only items from this list that are clearly visible in the photo. For each give "
-        '"ingredient_id" and "level" in {full, half, low}. Return JSON only, as an object {"items": [ ... ]}. Do not guess '
-        f"items you cannot see.\n\n{_ingredient_lines(ingredients)}"
+        "This is a photo of someone's kitchen shelf, pantry, fridge or groceries. Step 1: name every food you "
+        "can see. Step 2: for each one, pick the closest ingredient_id from the list below when there is a "
+        "reasonable match; fresh, frozen, canned or dried versions of the same food count as a match (fresh "
+        "spinach -> frozen_spinach, any tomatoes -> roma_tomatoes, any lentils -> dried_lentils, red kidney "
+        "beans -> canned_kidney_beans, broccoli -> broccoli_crowns, any white rice -> long_grain_rice, any jar "
+        "of peanut butter -> peanut_butter). Skip foods with no reasonable match; never invent an item that is "
+        'not in the photo. Level: "full" if unopened or plentiful, "half" if partly used, "low" if nearly gone. '
+        'Return JSON only: {"seen": [names], "items": [{"ingredient_id": ..., "level": ...}]}.\n\n'
+        f"{_ingredient_lines(ingredients)}"
     )
-    reply = llm.complete([{"role": "user", "content": prompt}], json_only=True, images=[image])
-    return _parse(reply["text"], ingredients, "photo")
+    reply = llm.complete([{"role": "user", "content": prompt}], json_only=True, images=[image], temperature=0.2)
+    items = _parse(reply["text"], ingredients, "photo")
+    if not items:  # debugging aid for the demo build: see what the model said when nothing matched
+        print(f"pantry: photo matched nothing; model said: {(reply['text'] or '')[:300]!r}", flush=True)
+    return items
 
 
 def detect_from_text(text: str, ingredients: dict[str, Ingredient]) -> list[PantryItem]:

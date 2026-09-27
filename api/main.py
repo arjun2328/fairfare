@@ -164,7 +164,9 @@ def post_pantry_detect(req: DetectRequest) -> list[PantryItem]:
             image = base64.b64decode(req.image_b64.split(",", 1)[-1], validate=False)
         except Exception:
             raise HTTPException(422, detail="image_b64 is not valid base64.")
-        return pantry.detect_from_image(image, INGREDIENTS)
+        items = pantry.detect_from_image(image, INGREDIENTS)
+        print(f"pantry: photo {len(image)} bytes -> {len(items)} items {[i.ingredient_id for i in items]}", flush=True)
+        return items
     return pantry.detect_from_text(req.text, INGREDIENTS)
 
 
