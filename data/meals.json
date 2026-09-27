@@ -1,0 +1,795 @@
+[
+ {
+  "id": "oatmeal_with_bananas",
+  "name": "Oatmeal with Bananas",
+  "slot": "breakfast",
+  "servings": 2,
+  "prep_min": 10,
+  "equipment": [
+   "stovetop"
+  ],
+  "palatability": 4,
+  "ingredients": {
+   "rolled_oats": 200,
+   "bananas": 200,
+   "whole_milk": 200
+  }
+ },
+ {
+  "id": "scrambled_eggs_with_tomatoes",
+  "name": "Scrambled Eggs with Tomatoes",
+  "slot": "breakfast",
+  "servings": 2,
+  "prep_min": 10,
+  "equipment": [
+   "stovetop"
+  ],
+  "palatability": 5,
+  "ingredients": {
+   "large_eggs": 150,
+   "roma_tomatoes": 200,
+   "butter": 30
+  }
+ },
+ {
+  "id": "eggs_and_corn_tortillas",
+  "name": "Eggs and Corn Tortillas",
+  "slot": "breakfast",
+  "servings": 2,
+  "prep_min": 15,
+  "equipment": [
+   "stovetop"
+  ],
+  "palatability": 4,
+  "ingredients": {
+   "large_eggs": 150,
+   "corn_tortillas": 200,
+   "green_bell_pepper": 100
+  }
+ },
+ {
+  "id": "oatmeal_with_yogurt",
+  "name": "Oatmeal with Yogurt",
+  "slot": "breakfast",
+  "servings": 2,
+  "prep_min": 10,
+  "equipment": [
+   "stovetop"
+  ],
+  "palatability": 4,
+  "ingredients": {
+   "rolled_oats": 200,
+   "plain_yogurt": 200,
+   "whole_milk": 100
+  }
+ },
+ {
+  "id": "banana_pancakes",
+  "name": "Banana Pancakes",
+  "slot": "breakfast",
+  "servings": 2,
+  "prep_min": 20,
+  "equipment": [
+   "stovetop"
+  ],
+  "palatability": 5,
+  "ingredients": {
+   "all_purpose_flour": 150,
+   "bananas": 200,
+   "large_eggs": 100
+  }
+ },
+ {
+  "id": "cheddar_omelette",
+  "name": "Cheddar Omelette",
+  "slot": "breakfast",
+  "servings": 2,
+  "prep_min": 15,
+  "equipment": [
+   "stovetop"
+  ],
+  "palatability": 5,
+  "ingredients": {
+   "large_eggs": 150,
+   "cheddar_cheese": 100,
+   "yellow_onions": 50
+  }
+ },
+ {
+  "id": "spaghetti_with_tomato_sauce",
+  "name": "Spaghetti with Tomato Sauce",
+  "slot": "lunch",
+  "servings": 2,
+  "prep_min": 20,
+  "equipment": [
+   "stovetop"
+  ],
+  "palatability": 4,
+  "ingredients": {
+   "spaghetti": 200,
+   "tomato_sauce": 200
+  }
+ },
+ {
+  "id": "beans_and_rice",
+  "name": "Beans and Rice",
+  "slot": "lunch",
+  "servings": 2,
+  "prep_min": 30,
+  "equipment": [
+   "stovetop"
+  ],
+  "palatability": 5,
+  "ingredients": {
+   "long_grain_rice": 200,
+   "canned_black_beans": 200,
+   "yellow_onions": 50
+  }
+ },
+ {
+  "id": "vegetable_stir_fry",
+  "name": "Vegetable Stir Fry",
+  "slot": "lunch",
+  "servings": 2,
+  "prep_min": 15,
+  "equipment": [
+   "stovetop"
+  ],
+  "palatability": 4,
+  "ingredients": {
+   "frozen_mixed_vegetables": 300,
+   "soy_sauce": 50,
+   "long_grain_rice": 200
+  }
+ },
+ {
+  "id": "chickpea_stew",
+  "name": "Chickpea Stew",
+  "slot": "lunch",
+  "servings": 2,
+  "prep_min": 30,
+  "equipment": [
+   "stovetop"
+  ],
+  "palatability": 4,
+  "ingredients": {
+   "canned_chickpeas": 400,
+   "canned_diced_tomatoes": 200,
+   "yellow_onions": 50
+  }
+ },
+ {
+  "id": "pasta_with_vegetables",
+  "name": "Pasta with Vegetables",
+  "slot": "lunch",
+  "servings": 2,
+  "prep_min": 20,
+  "equipment": [
+   "stovetop"
+  ],
+  "palatability": 4,
+  "ingredients": {
+   "elbow_macaroni": 200,
+   "frozen_mixed_vegetables": 300,
+   "tomato_sauce": 100
+  }
+ },
+ {
+  "id": "rice_and_broccoli",
+  "name": "Rice and Broccoli",
+  "slot": "lunch",
+  "servings": 2,
+  "prep_min": 20,
+  "equipment": [
+   "stovetop"
+  ],
+  "palatability": 4,
+  "ingredients": {
+   "long_grain_rice": 200,
+   "frozen_broccoli": 300,
+   "butter": 30
+  }
+ },
+ {
+  "id": "potato_and_cabbage_stir_fry",
+  "name": "Potato and Cabbage Stir Fry",
+  "slot": "lunch",
+  "servings": 2,
+  "prep_min": 30,
+  "equipment": [
+   "stovetop"
+  ],
+  "palatability": 4,
+  "ingredients": {
+   "russet_potatoes": 300,
+   "green_cabbage": 200,
+   "yellow_onions": 50
+  }
+ },
+ {
+  "id": "chicken_and_rice",
+  "name": "Chicken and Rice",
+  "slot": "lunch",
+  "servings": 2,
+  "prep_min": 30,
+  "equipment": [
+   "stovetop"
+  ],
+  "palatability": 5,
+  "ingredients": {
+   "long_grain_rice": 200,
+   "chicken_thighs": 300,
+   "yellow_onions": 50
+  }
+ },
+ {
+  "id": "vegetable_soup_with_bread",
+  "name": "Vegetable Soup with Bread",
+  "slot": "lunch",
+  "servings": 2,
+  "prep_min": 20,
+  "equipment": [
+   "stovetop"
+  ],
+  "palatability": 4,
+  "ingredients": {
+   "canned_diced_tomatoes": 200,
+   "frozen_mixed_vegetables": 200,
+   "white_bread": 200
+  }
+ },
+ {
+  "id": "chicken_tacos",
+  "name": "Chicken Tacos",
+  "slot": "lunch",
+  "servings": 2,
+  "prep_min": 20,
+  "equipment": [
+   "stovetop"
+  ],
+  "palatability": 5,
+  "ingredients": {
+   "flour_tortillas": 200,
+   "chicken_breast": 300,
+   "salsa": 100
+  }
+ },
+ {
+  "id": "pasta_with_tuna",
+  "name": "Pasta with Tuna",
+  "slot": "lunch",
+  "servings": 2,
+  "prep_min": 20,
+  "equipment": [
+   "stovetop"
+  ],
+  "palatability": 4,
+  "ingredients": {
+   "elbow_macaroni": 200,
+   "canned_tuna": 200,
+   "mayonnaise": 50
+  }
+ },
+ {
+  "id": "chicken_and_broccoli",
+  "name": "Chicken and Broccoli",
+  "slot": "dinner",
+  "servings": 2,
+  "prep_min": 30,
+  "equipment": [
+   "stovetop"
+  ],
+  "palatability": 5,
+  "ingredients": {
+   "chicken_breast": 300,
+   "frozen_broccoli": 300,
+   "soy_sauce": 50
+  }
+ },
+ {
+  "id": "lentil_soup",
+  "name": "Lentil Soup",
+  "slot": "dinner",
+  "servings": 2,
+  "prep_min": 30,
+  "equipment": [
+   "stovetop"
+  ],
+  "palatability": 4,
+  "ingredients": {
+   "dried_lentils": 200,
+   "canned_diced_tomatoes": 200,
+   "yellow_onions": 50
+  }
+ },
+ {
+  "id": "baked_potatoes_with_broccoli",
+  "name": "Baked Potatoes with Broccoli",
+  "slot": "dinner",
+  "servings": 2,
+  "prep_min": 30,
+  "equipment": [
+   "oven"
+  ],
+  "palatability": 4,
+  "ingredients": {
+   "russet_potatoes": 400,
+   "frozen_broccoli": 300,
+   "cheddar_cheese": 100
+  }
+ },
+ {
+  "id": "smoked_sausage_with_vegetables",
+  "name": "Smoked Sausage with Vegetables",
+  "slot": "dinner",
+  "servings": 2,
+  "prep_min": 20,
+  "equipment": [
+   "stovetop"
+  ],
+  "palatability": 4,
+  "ingredients": {
+   "smoked_sausage": 300,
+   "frozen_mixed_vegetables": 300,
+   "yellow_onions": 50
+  }
+ },
+ {
+  "id": "chicken_stir_fry",
+  "name": "Chicken Stir Fry",
+  "slot": "dinner",
+  "servings": 2,
+  "prep_min": 20,
+  "equipment": [
+   "stovetop"
+  ],
+  "palatability": 5,
+  "ingredients": {
+   "chicken_breast": 300,
+   "frozen_mixed_vegetables": 300,
+   "soy_sauce": 50
+  }
+ },
+ {
+  "id": "vegetable_fried_rice",
+  "name": "Vegetable Fried Rice",
+  "slot": "dinner",
+  "servings": 2,
+  "prep_min": 15,
+  "equipment": [
+   "stovetop"
+  ],
+  "palatability": 4,
+  "ingredients": {
+   "long_grain_rice": 200,
+   "frozen_mixed_vegetables": 300,
+   "soy_sauce": 50
+  }
+ },
+ {
+  "id": "black_bean_tacos",
+  "name": "Black Bean Tacos",
+  "slot": "dinner",
+  "servings": 2,
+  "prep_min": 15,
+  "equipment": [
+   "stovetop"
+  ],
+  "palatability": 4,
+  "ingredients": {
+   "corn_tortillas": 200,
+   "canned_black_beans": 200,
+   "salsa": 100
+  }
+ },
+ {
+  "id": "chicken_and_potatoes",
+  "name": "Chicken and Potatoes",
+  "slot": "dinner",
+  "servings": 2,
+  "prep_min": 30,
+  "equipment": [
+   "oven"
+  ],
+  "palatability": 5,
+  "ingredients": {
+   "chicken_thighs": 300,
+   "russet_potatoes": 400,
+   "yellow_onions": 50
+  }
+ },
+ {
+  "id": "spaghetti_with_black_beans",
+  "name": "Spaghetti with Black Beans",
+  "slot": "dinner",
+  "servings": 2,
+  "prep_min": 20,
+  "equipment": [
+   "stovetop"
+  ],
+  "palatability": 4,
+  "ingredients": {
+   "spaghetti": 200,
+   "canned_black_beans": 200,
+   "tomato_sauce": 100
+  }
+ },
+ {
+  "id": "vegetable_curry_with_rice",
+  "name": "Vegetable Curry with Rice",
+  "slot": "dinner",
+  "servings": 2,
+  "prep_min": 30,
+  "equipment": [
+   "stovetop"
+  ],
+  "palatability": 4,
+  "ingredients": {
+   "long_grain_rice": 200,
+   "frozen_mixed_vegetables": 300,
+   "ground_cumin": 30
+  }
+ },
+ {
+  "id": "chicken_and_lentils",
+  "name": "Chicken and Lentils",
+  "slot": "dinner",
+  "servings": 2,
+  "prep_min": 30,
+  "equipment": [
+   "stovetop"
+  ],
+  "palatability": 5,
+  "ingredients": {
+   "chicken_breast": 300,
+   "dried_lentils": 200,
+   "yellow_onions": 50
+  }
+ },
+ {
+  "id": "broccoli_and_cheddar_rice",
+  "name": "Broccoli and Cheddar Rice",
+  "slot": "dinner",
+  "servings": 2,
+  "prep_min": 20,
+  "equipment": [
+   "stovetop"
+  ],
+  "palatability": 4,
+  "ingredients": {
+   "long_grain_rice": 200,
+   "frozen_broccoli": 300,
+   "cheddar_cheese": 100
+  }
+ },
+ {
+  "id": "cabbage_and_potatoes",
+  "name": "Cabbage and Potatoes",
+  "slot": "dinner",
+  "servings": 2,
+  "prep_min": 30,
+  "equipment": [
+   "stovetop"
+  ],
+  "palatability": 4,
+  "ingredients": {
+   "russet_potatoes": 300,
+   "green_cabbage": 200,
+   "yellow_onions": 50
+  }
+ },
+ {
+  "id": "microwave_oatmeal_with_bananas",
+  "name": "Microwave Oatmeal with Bananas",
+  "slot": "breakfast",
+  "servings": 2,
+  "prep_min": 5,
+  "equipment": [
+   "microwave"
+  ],
+  "palatability": 4,
+  "ingredients": {
+   "rolled_oats": 100,
+   "bananas": 200,
+   "whole_milk": 200
+  }
+ },
+ {
+  "id": "egg_mug_scramble",
+  "name": "Egg Mug Scramble",
+  "slot": "breakfast",
+  "servings": 2,
+  "prep_min": 10,
+  "equipment": [
+   "microwave"
+  ],
+  "palatability": 4,
+  "ingredients": {
+   "large_eggs": 100,
+   "cheddar_cheese": 50,
+   "green_bell_pepper": 50
+  }
+ },
+ {
+  "id": "yogurt_with_oats_and_banana",
+  "name": "Yogurt with Oats and Banana",
+  "slot": "breakfast",
+  "servings": 2,
+  "prep_min": 5,
+  "equipment": [],
+  "palatability": 5,
+  "ingredients": {
+   "plain_yogurt": 300,
+   "rolled_oats": 50,
+   "bananas": 100
+  }
+ },
+ {
+  "id": "peanut_butter_and_banana_sandwich",
+  "name": "Peanut Butter and Banana Sandwich",
+  "slot": "breakfast",
+  "servings": 2,
+  "prep_min": 5,
+  "equipment": [],
+  "palatability": 5,
+  "ingredients": {
+   "white_bread": 100,
+   "peanut_butter": 100,
+   "bananas": 100
+  }
+ },
+ {
+  "id": "microwave_rice_with_frozen_vegetables",
+  "name": "Microwave Rice with Frozen Vegetables",
+  "slot": "lunch",
+  "servings": 4,
+  "prep_min": 15,
+  "equipment": [
+   "microwave"
+  ],
+  "palatability": 3,
+  "ingredients": {
+   "long_grain_rice": 200,
+   "frozen_mixed_vegetables": 300
+  }
+ },
+ {
+  "id": "tuna_sandwich",
+  "name": "Tuna Sandwich",
+  "slot": "lunch",
+  "servings": 2,
+  "prep_min": 10,
+  "equipment": [],
+  "palatability": 4,
+  "ingredients": {
+   "white_bread": 100,
+   "canned_tuna": 150,
+   "mayonnaise": 50
+  }
+ },
+ {
+  "id": "bean_salad_from_canned_beans",
+  "name": "Bean Salad from Canned Beans",
+  "slot": "lunch",
+  "servings": 4,
+  "prep_min": 10,
+  "equipment": [],
+  "palatability": 4,
+  "ingredients": {
+   "canned_black_beans": 200,
+   "canned_corn": 150,
+   "roma_tomatoes": 100,
+   "green_bell_pepper": 100
+  }
+ },
+ {
+  "id": "bean_and_cheese_quesadilla",
+  "name": "Bean and Cheese Quesadilla in the Microwave",
+  "slot": "lunch",
+  "servings": 2,
+  "prep_min": 15,
+  "equipment": [
+   "microwave"
+  ],
+  "palatability": 4,
+  "ingredients": {
+   "flour_tortillas": 100,
+   "canned_black_beans": 200,
+   "cheddar_cheese": 100
+  }
+ },
+ {
+  "id": "baked_potato_with_beans_and_cheese",
+  "name": "Baked Potato with Beans and Cheese",
+  "slot": "dinner",
+  "servings": 2,
+  "prep_min": 20,
+  "equipment": [
+   "microwave"
+  ],
+  "palatability": 4,
+  "ingredients": {
+   "russet_potatoes": 300,
+   "canned_black_beans": 200,
+   "cheddar_cheese": 100
+  }
+ },
+ {
+  "id": "microwave_spaghetti_with_tomato_sauce",
+  "name": "Microwave Spaghetti with Tomato Sauce",
+  "slot": "dinner",
+  "servings": 4,
+  "prep_min": 15,
+  "equipment": [
+   "microwave"
+  ],
+  "palatability": 3,
+  "ingredients": {
+   "spaghetti": 200,
+   "tomato_sauce": 300
+  }
+ },
+ {
+  "id": "microwave_broccoli_and_cheese",
+  "name": "Microwave Broccoli and Cheese",
+  "slot": "dinner",
+  "servings": 2,
+  "prep_min": 10,
+  "equipment": [
+   "microwave"
+  ],
+  "palatability": 4,
+  "ingredients": {
+   "frozen_broccoli": 200,
+   "cheddar_cheese": 100
+  }
+ },
+ {
+  "id": "microwave_elbow_macaroni_with_salsa",
+  "name": "Microwave Elbow Macaroni with Salsa",
+  "slot": "dinner",
+  "servings": 4,
+  "prep_min": 15,
+  "equipment": [
+   "microwave"
+  ],
+  "palatability": 3,
+  "ingredients": {
+   "elbow_macaroni": 200,
+   "salsa": 150
+  }
+ },
+ {
+  "id": "baked_oatmeal_with_bananas",
+  "name": "Baked Oatmeal with Bananas",
+  "slot": "breakfast",
+  "servings": 4,
+  "prep_min": 15,
+  "equipment": [
+   "oven"
+  ],
+  "palatability": 4,
+  "ingredients": {
+   "rolled_oats": 300,
+   "bananas": 200,
+   "whole_milk": 500,
+   "large_eggs": 4,
+   "sugar": 100
+  }
+ },
+ {
+  "id": "breakfast_egg_bake_with_spinach",
+  "name": "Breakfast Egg Bake with Spinach",
+  "slot": "breakfast",
+  "servings": 6,
+  "prep_min": 20,
+  "equipment": [
+   "oven"
+  ],
+  "palatability": 5,
+  "ingredients": {
+   "large_eggs": 6,
+   "frozen_spinach": 300,
+   "cheddar_cheese": 200
+  }
+ },
+ {
+  "id": "baked_potato_bar_with_beans_and_cheese",
+  "name": "Baked Potato Bar with Beans and Cheese",
+  "slot": "breakfast",
+  "servings": 4,
+  "prep_min": 25,
+  "equipment": [
+   "oven"
+  ],
+  "palatability": 4,
+  "ingredients": {
+   "russet_potatoes": 800,
+   "canned_black_beans": 400,
+   "cheddar_cheese": 200
+  }
+ },
+ {
+  "id": "baked_mac_and_cheese",
+  "name": "Baked Mac and Cheese",
+  "slot": "lunch",
+  "servings": 6,
+  "prep_min": 30,
+  "equipment": [
+   "oven"
+  ],
+  "palatability": 5,
+  "ingredients": {
+   "elbow_macaroni": 300,
+   "cheddar_cheese": 400,
+   "whole_milk": 500,
+   "butter": 100,
+   "all_purpose_flour": 50
+  }
+ },
+ {
+  "id": "bean_and_cheese_enchilada_bake",
+  "name": "Bean and Cheese Enchilada Bake",
+  "slot": "lunch",
+  "servings": 6,
+  "prep_min": 30,
+  "equipment": [
+   "oven"
+  ],
+  "palatability": 5,
+  "ingredients": {
+   "flour_tortillas": 300,
+   "canned_black_beans": 400,
+   "shredded_mozzarella": 300,
+   "salsa": 200
+  }
+ },
+ {
+  "id": "sheet_pan_chicken_thighs_with_potatoes_and_carrots",
+  "name": "Sheet Pan Chicken Thighs with Potatoes and Carrots",
+  "slot": "dinner",
+  "servings": 4,
+  "prep_min": 20,
+  "equipment": [
+   "oven"
+  ],
+  "palatability": 5,
+  "ingredients": {
+   "chicken_thighs": 800,
+   "russet_potatoes": 600,
+   "carrots": 400
+  }
+ },
+ {
+  "id": "baked_chicken_drumsticks_with_sweet_potatoes",
+  "name": "Baked Chicken Drumsticks with Sweet Potatoes",
+  "slot": "dinner",
+  "servings": 6,
+  "prep_min": 30,
+  "equipment": [
+   "oven"
+  ],
+  "palatability": 4,
+  "ingredients": {
+   "chicken_drumsticks": 900,
+   "sweet_potatoes": 600
+  }
+ },
+ {
+  "id": "tuna_noodle_casserole",
+  "name": "Tuna Noodle Casserole",
+  "slot": "dinner",
+  "servings": 4,
+  "prep_min": 20,
+  "equipment": [
+   "oven"
+  ],
+  "palatability": 4,
+  "ingredients": {
+   "spaghetti": 300,
+   "canned_tuna": 400,
+   "canned_green_beans": 300,
+   "cheddar_cheese": 200
+  }
+ }
+]
