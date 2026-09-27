@@ -1,25 +1,33 @@
-/* Plan ("week") screen, Profile screen and the extended MealDetail sheet.
-   Builds on tokens.css, base.css (.sheet .checkrow .link), fairfare.css (.plancard .plantop .seg .iconbtn
-   .weekitem .tag .infobox .nutri-row .nstat .btn-line .btn-primary) and meals.css (.meal-photo .meal-detail__*). */
+/* Plan screen (the app's home), Profile screen and the extended MealDetail sheet.
+   Builds on tokens.css, base.css (.sheet .checkrow .link), fairfare.css (.hero .money-pill .infobox .warnbox
+   .section-title .btn-line .btn-primary .basics .daycard), app.css (.skeleton .cta-pinned) and meals.css
+   (.meal-list .meal-photo .meal-detail__*).
+   Plan classes added here: .hero-skel--sub .warnbox--plan .warnbox__text .warnbox__link
+                            .intro .intro__dismiss .triplist .triplist__more .daybyday */
 
 /* The topbar's gold Leaf button (.iconbtn--gold) is shared chrome defined once in home.css. */
 
-/* ---- plan card: days + pencil, seg, pace line ---- */
-.plantop .iconbtn { width: 44px; height: 44px; }
-.plantop .iconbtn .ic { width: 18px; height: 18px; }
-.plancard .seg { margin-bottom: 12px; }
-.pace-line { display: flex; align-items: flex-start; gap: 6px; font-size: 13px; line-height: 1.4; }
-.pace-line .ic { width: 15px; height: 15px; flex: none; margin-top: 2px; }
-.pace-line.warn { color: var(--berry); }
+/* ---- hero: loading skeleton on the green-deep card (app.css .skeleton would paint it paper-alt) ---- */
+.hero .skeleton.hero-skel { background: rgba(255, 255, 255, 0.14); }
+.hero .hero-skel--sub { height: 16px; width: 220px; max-width: 100%; margin-top: 12px; }
+.hero .split .money-pill { min-height: 28px; }
 
-/* ---- "Your trip" rows: thumb + name/times + cost tag + remove ---- */
-.weekitem__open { flex: 1; min-width: 0; display: flex; align-items: center; gap: 12px; background: none; border: 0; padding: 0; text-align: left; color: var(--ink); min-height: 44px; }
-.weekitem__text { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
-.weekitem__text .name { flex: none; font-size: 14.5px; font-weight: 500; line-height: 1.3; overflow: hidden; text-overflow: ellipsis; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; }
-.weekitem .tag.cost { flex: none; }
-.weekitem .rm { flex: none; margin-right: -10px; }
-.weekitem:last-child { border-bottom: 0; }
-.triplist { margin-bottom: 18px; }
+/* ---- solve error under the hero: message plus a "Change budget or dates" link on its own tappable line ---- */
+.warnbox--plan { margin: 0 0 16px; font-size: 13.5px; }
+.warnbox__text { flex: 1; min-width: 0; display: flex; flex-direction: column; align-items: flex-start; gap: 2px; }
+.warnbox__link { font-size: 14px; font-weight: 600; }
+
+/* ---- first-visit line ---- */
+.intro .infobox__text { gap: 4px; }
+.intro__dismiss { font-size: 13px; font-weight: 600; }
+
+/* ---- "Your meals" list: MealCards then the "Add more from Recipes" button ---- */
+.triplist { margin-bottom: 22px; }
+.triplist__more { margin-top: 12px; }
+
+/* ---- "Day by day": TodayRow and the day cards under one heading ---- */
+.daybyday { margin-bottom: 8px; }
+.daybyday .section-title--sm { font-size: 15px; color: var(--ink-soft); font-family: var(--font-body); font-weight: 600; margin-bottom: 8px; }
 
 /* ---- day-by-day list: an open day's meal name is tappable ---- */
 .dayrow__open { display: flex; flex-direction: column; gap: 2px; align-items: flex-start; background: none; border: 0; padding: 4px 0; min-height: 44px; text-align: left; color: var(--ink); font: inherit; width: 100%; }

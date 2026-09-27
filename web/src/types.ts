@@ -80,6 +80,7 @@ export interface Household {
   excluded_meals: string[];
   accepted_meals: string[] | null;
   required_meals: string[]; // meals the user pinned: the solver cooks each at least once if it can
+  favorite_meals: string[]; // the user's cookbook: saved recipes the solver leans toward
   out_of_stock: string[];
   pantry: Record<string, number>;
   assume_staples: boolean;
@@ -156,6 +157,7 @@ export const DEFAULT_HOUSEHOLD: Household = {
   excluded_meals: [],
   accepted_meals: null,
   required_meals: [],
+  favorite_meals: [],
   out_of_stock: [],
   pantry: {},
   assume_staples: true,

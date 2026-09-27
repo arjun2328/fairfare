@@ -207,3 +207,14 @@ def test_meal_facts_match_solver_costs_and_flag_cash_items():
     for mid, n in plan.meals.items():
         meal = next(m for m in MEALS if m.id == mid)
         assert plan.meal_cost_cents[mid] == plan.meal_serving_cents[mid] * meal.servings * n
+
+
+def test_saved_recipes_are_never_cooked_less():
+    hh = make_household()
+    base = solve(MEALS, INGREDIENTS, hh, targets_for(hh))
+    assert base is not None
+    for m in MEALS:
+        fav = solve(MEALS, INGREDIENTS, make_household(favorite_meals=[m.id]), targets_for(hh))
+        assert fav is not None
+        assert fav.meals.get(m.id, 0) >= base.meals.get(m.id, 0)
+        assert fav.ebt_cents <= hh.ebt_cents and fav.cash_cents <= hh.cash_cents

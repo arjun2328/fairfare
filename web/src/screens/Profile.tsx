@@ -1,11 +1,12 @@
 import { useState } from "react";
-import { ChevronRight, Leaf } from "lucide-react";
+import { ChevronLeft, ChevronRight, Leaf } from "lucide-react";
 import { useApp } from "../state";
 import type { Diet, Equipment } from "../types";
 import AdjustSheet from "../components/AdjustSheet";
-import PlanForm from "../components/PlanForm";
+import PaymentCard from "../components/PaymentCard";
+import PlanForm, { NutritionStrip } from "../components/PlanForm";
 
-type Sheet = "balances" | "diet" | "kitchen" | "excluded";
+type Sheet = "balances" | "diet" | "kitchen" | "hidden" | "nutrition" | "payment";
 
 const DIETS: { key: Diet; label: string; note?: string }[] = [
   { key: "vegetarian", label: "Vegetarian", note: "No meat, poultry, fish, shellfish or gelatin." },
@@ -34,16 +35,17 @@ function ProfileRow({ label, value, onClick }: { label: string; value?: string; 
   );
 }
 
-/** Household settings as a list of rows; each opens a sheet that patches the household (and re-solves). */
+/** Household settings as a list of rows; each opens a sheet that patches the household (and re-solves). Reached from Plan, not a tab. */
 export default function Profile() {
-  const { household, plan, meals, setHousehold, resetHousehold } = useApp();
+  const { household, plan, meals, setHousehold, resetHousehold, navigate } = useApp();
   const [sheet, setSheet] = useState<Sheet | null>(null);
   if (!household) return null;
 
   const close = () => setSheet(null);
   const dietValue = household.diet.length ? household.diet.join(", ") : "None";
   const kitchenValue = household.equipment.length ? household.equipment.join(" + ") : "No cooking";
-  const excludedCount = household.excluded_meals.length;
+  const hiddenCount = household.excluded_meals.length;
+  const savedCount = household.favorite_meals.length;
 
   const toggleDiet = (d: Diet, on: boolean) => {
     const next = on ? Array.from(new Set([...household.diet, d])) : household.diet.filter((x) => x !== d);
@@ -53,12 +55,17 @@ export default function Profile() {
     const next = on ? Array.from(new Set([...household.equipment, e])) : household.equipment.filter((x) => x !== e);
     setHousehold({ equipment: next });
   };
-  const addBack = (id: string) => setHousehold({ excluded_meals: household.excluded_meals.filter((x) => x !== id) });
+  const showAgain = (id: string) => setHousehold({ excluded_meals: household.excluded_meals.filter((x) => x !== id) });
 
   return (
     <div className="screen">
       <div className="topbar">
-        <h2>Profile</h2>
+        <div className="row profile-topbar">
+          <button type="button" className="quiz-back profile-back" aria-label="Back to plan" onClick={() => navigate("/plan")}>
+            <ChevronLeft className="ic" aria-hidden="true" />
+          </button>
+          <h2>Profile</h2>
+        </div>
       </div>
 
       <div className="profile-head">
@@ -73,7 +80,13 @@ export default function Profile() {
         <ProfileRow label="Deposit & balances" onClick={() => setSheet("balances")} />
         <ProfileRow label="Dietary needs" value={dietValue} onClick={() => setSheet("diet")} />
         <ProfileRow label="Kitchen setup" value={kitchenValue} onClick={() => setSheet("kitchen")} />
-        <ProfileRow label="Meals marked not for me" value={String(excludedCount)} onClick={() => setSheet("excluded")} />
+      </div>
+
+      <div className="profile-list">
+        <ProfileRow label="Saved recipes" value={String(savedCount)} onClick={() => navigate("/cookbook")} />
+        <ProfileRow label="Hidden recipes" value={String(hiddenCount)} onClick={() => setSheet("hidden")} />
+        <ProfileRow label="Nutrition this trip" onClick={() => setSheet("nutrition")} />
+        <ProfileRow label="Payment summary" onClick={() => setSheet("payment")} />
       </div>
 
       <div className="profile-foot">
@@ -138,21 +151,36 @@ export default function Profile() {
         </button>
       </AdjustSheet>
 
-      <AdjustSheet open={sheet === "excluded"} onClose={close} title="Meals marked not for me">
-        {excludedCount === 0 ? (
-          <p className="sheet-note">You haven't marked any meals not for me. Tap the × next to a meal on your plan to skip it for good.</p>
+      <AdjustSheet open={sheet === "hidden"} onClose={close} title="Hidden recipes">
+        {hiddenCount === 0 ? (
+          <p className="sheet-note">Nothing is hidden. Open any recipe and tap "Don't suggest this again" to keep it out of your plans.</p>
         ) : (
           <div>
             {household.excluded_meals.map((id) => (
               <div key={id} className="weekitem">
                 <span className="name">{meals[id]?.name ?? id}</span>
-                <button type="button" className="link" onClick={() => addBack(id)}>
-                  Add back
+                <button type="button" className="link" onClick={() => showAgain(id)}>
+                  Show again
                 </button>
               </div>
             ))}
           </div>
         )}
+        <button type="button" className="btn-primary" onClick={close}>
+          Done
+        </button>
+      </AdjustSheet>
+
+      <AdjustSheet open={sheet === "nutrition"} onClose={close} title="Nutrition this trip">
+        {plan ? <NutritionStrip plan={plan} /> : <p className="sheet-note">Your plan is still loading.</p>}
+        <p className="sheet-note">Shown as met or percent of target.</p>
+        <button type="button" className="btn-primary" onClick={close}>
+          Done
+        </button>
+      </AdjustSheet>
+
+      <AdjustSheet open={sheet === "payment"} onClose={close} title="Payment summary">
+        {plan ? <PaymentCard plan={plan} household={household} title={null} /> : <p className="sheet-note">Your plan is still loading.</p>}
         <button type="button" className="btn-primary" onClick={close}>
           Done
         </button>

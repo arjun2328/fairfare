@@ -71,6 +71,7 @@ class Household(BaseModel):
     excluded_meals: list[str] = []
     accepted_meals: list[str] | None = None
     required_meals: list[str] = []   # meals the user pinned; the solver cooks each at least once when the budget allows
+    favorite_meals: list[str] = []   # the user's cookbook; the solver leans toward these (objective bonus, never a constraint)
     out_of_stock: list[str] = []
     pantry: dict[str, int] = {}
     assume_staples: bool = True

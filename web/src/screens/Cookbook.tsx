@@ -1,125 +1,93 @@
 import { useState } from "react";
-import { Check, Leaf } from "lucide-react";
-import { fmtMoney } from "../format";
+import { Heart, Leaf } from "lucide-react";
 import { useApp } from "../state";
-import type { Meal, MealFacts, Slot } from "../types";
-import MealPhoto from "../components/MealPhoto";
+import type { Meal, MealFacts } from "../types";
+import MealCard from "../components/MealCard";
 import MealDetail from "../components/MealDetail";
+import { factTag, SkeletonRow } from "./Recipes";
 
-type Filter = "all" | Slot;
-const FILTERS: { key: Filter; label: string }[] = [
-  { key: "all", label: "All" },
-  { key: "breakfast", label: "Breakfast" },
-  { key: "lunch", label: "Lunch" },
-  { key: "dinner", label: "Dinner" },
-];
-
-function SkeletonTile() {
-  return (
-    <div className="cook-tile" aria-hidden="true">
-      <div className="skeleton" style={{ width: "100%", height: 110, borderRadius: 14 }} />
-      <div className="skeleton" style={{ width: "80%" }} />
-      <div className="skeleton" style={{ width: "55%", minHeight: 12 }} />
-    </div>
-  );
-}
-
+/** Saved recipes only, in the order they were hearted. The planner leans on these when it builds the trip. */
 export default function Cookbook() {
-  const {
-    household,
-    plan,
-    meals,
-    ingredients,
-    facts,
-    solving,
-    setHousehold,
-    pinMeal,
-    unpinMeal,
-    skipMeal,
-    includeMeal,
-    navigate,
-  } = useApp();
-  const [filter, setFilter] = useState<Filter>("all");
+  const { household, plan, meals, ingredients, facts, solving, setHousehold, pinMeal, skipMeal, toggleFavorite, navigate } =
+    useApp();
   const [openMeal, setOpenMeal] = useState<Meal | null>(null);
   if (!household) return null;
 
-  // Same two helpers as Plan.tsx: "Not for me" is a filter on the candidate pool, never an LLM call.
-  const notForMe = (id: string) => setHousehold({ excluded_meals: Array.from(new Set([...household.excluded_meals, id])) });
-  const undoNotForMe = (id: string) => setHousehold({ excluded_meals: household.excluded_meals.filter((x) => x !== id) });
-  const isIncluded = (id: string) => household.accepted_meals === null || household.accepted_meals.includes(id);
-  const isPinned = (id: string) => household.required_meals.includes(id);
-
   const excluded = new Set(household.excluded_meals);
+  const favorites = new Set(household.favorite_meals);
+  const required = new Set(household.required_meals);
+  const isInTrip = (id: string) => (plan?.meals[id] ?? 0) > 0;
+  const isPinnedNotFit = (id: string) => required.has(id) && !isInTrip(id);
+  const neverShow = (id: string) =>
+    setHousehold({
+      excluded_meals: Array.from(new Set([...household.excluded_meals, id])),
+      required_meals: household.required_meals.filter((x) => x !== id),
+    });
+  const showAgain = (id: string) => setHousehold({ excluded_meals: household.excluded_meals.filter((x) => x !== id) });
+
   const factsFor = (id: string): MealFacts | undefined => facts[id];
-  const byName = (a: Meal, b: Meal) => a.name.localeCompare(b.name);
-  const pool = Object.values(meals);
-  const visible = pool.filter((m) => filter === "all" || m.slot === filter);
-  const inPlan = visible.filter((m) => !!plan?.meals[m.id] && !excluded.has(m.id)).sort(byName);
-  const rest = visible.filter((m) => !plan?.meals[m.id] && !excluded.has(m.id)).sort(byName);
-  const muted = visible.filter((m) => excluded.has(m.id)).sort(byName);
-  const tiles = [...inPlan, ...rest, ...muted];
+  const poolLoaded = Object.keys(meals).length > 0;
+  // Insertion order of favorite_meals; ids the pool no longer knows are skipped.
+  const saved = household.favorite_meals.map((id) => meals[id]).filter((m): m is Meal => !!m);
+  const notInTrip = saved.filter((m) => !isInTrip(m.id));
 
   return (
     <div className="screen">
       <div className="topbar">
-        <h2>Cookbook</h2>
+        <h2>My cookbook</h2>
         <button type="button" className="iconbtn iconbtn--gold" aria-label="Profile" onClick={() => navigate("/profile")}>
           <Leaf className="ic" aria-hidden="true" />
         </button>
       </div>
+      <p className="subnote cook-intro">Recipes you save show up here, and the planner leans on them when it builds your trip.</p>
 
-      <div className="home-chips" role="group" aria-label="Filter by meal">
-        {FILTERS.map(({ key, label }) => (
-          <button
-            key={key}
-            type="button"
-            className={`chip${filter === key ? " new" : ""}`}
-            aria-pressed={filter === key}
-            onClick={() => setFilter(key)}
-          >
-            {label}
+      {household.favorite_meals.length === 0 ? (
+        <div className="plancard cook-empty">
+          <Heart className="ic cook-empty__icon" aria-hidden="true" />
+          <h3>Nothing saved yet</h3>
+          <p className="subnote">Tap the heart on any recipe to keep it here.</p>
+          <button type="button" className="btn-line" onClick={() => navigate("/recipes")}>
+            Browse recipes
           </button>
-        ))}
-      </div>
-
-      {pool.length === 0 ? (
-        <div className="cook-grid">
-          <SkeletonTile />
-          <SkeletonTile />
-          <SkeletonTile />
-          <SkeletonTile />
         </div>
-      ) : tiles.length === 0 ? (
-        <p className="subnote">No meals match this filter.</p>
+      ) : !poolLoaded ? (
+        <div className="home-list">
+          <SkeletonRow />
+          <SkeletonRow />
+        </div>
       ) : (
-        <div className={`cook-grid${solving ? " loading" : ""}`}>
-          {tiles.map((m) => {
-            const f = factsFor(m.id);
-            const inThisPlan = !!plan?.meals[m.id] && !excluded.has(m.id);
-            const isMuted = excluded.has(m.id);
-            const sub = f ? `${fmtMoney(f.serving_cents)}/serving · ${m.prep_min} min` : `${m.prep_min} min`;
-            return (
-              <button
-                key={m.id}
-                type="button"
-                className={`cook-tile${isMuted ? " cook-tile--muted" : ""}`}
-                onClick={() => setOpenMeal(m)}
-              >
-                <div className="cook-tile__photo">
-                  <MealPhoto meal={m} variant="card" />
-                  {inThisPlan && (
-                    <span className="cook-tile__badge" role="img" aria-label="In your plan">
-                      <Check className="ic" aria-hidden="true" />
-                    </span>
-                  )}
-                </div>
-                <span className="cook-tile__name">{m.name}</span>
-                {isMuted && <span className="tag mute">Not for me</span>}
-                <span className="subnote cook-tile__sub">{sub}</span>
+        <>
+          <section aria-label="Saved recipes" className="home-list">
+            {saved.map((meal) => {
+              const f = factsFor(meal.id);
+              const inTrip = isInTrip(meal.id);
+              return (
+                <MealCard
+                  key={meal.id}
+                  meal={meal}
+                  servingCents={f?.serving_cents}
+                  times={inTrip ? plan?.meals[meal.id] : undefined}
+                  tag={factTag(f)}
+                  favorite={favorites.has(meal.id)}
+                  inTrip={inTrip}
+                  onOpen={() => setOpenMeal(meal)}
+                  onToggleFavorite={() => toggleFavorite(meal.id)}
+                  onAdd={() => pinMeal(meal.id)}
+                  onRemove={() => skipMeal(meal.id)}
+                  loading={solving}
+                />
+              );
+            })}
+          </section>
+
+          {notInTrip.length > 0 && (
+            <div className="cook-foot">
+              <button type="button" className="btn-line" onClick={() => notInTrip.forEach((m) => pinMeal(m.id))}>
+                Add all saved recipes to this trip
               </button>
-            );
-          })}
-        </div>
+            </div>
+          )}
+        </>
       )}
 
       <MealDetail
@@ -127,16 +95,16 @@ export default function Cookbook() {
         ingredients={ingredients}
         facts={openMeal ? factsFor(openMeal.id) : undefined}
         times={openMeal ? plan?.meals[openMeal.id] : undefined}
+        favorite={openMeal ? favorites.has(openMeal.id) : false}
+        inTrip={openMeal ? isInTrip(openMeal.id) : false}
+        pinnedNotFit={openMeal ? isPinnedNotFit(openMeal.id) : false}
         excluded={openMeal ? excluded.has(openMeal.id) : false}
-        included={openMeal ? isIncluded(openMeal.id) : true}
-        pinned={openMeal ? isPinned(openMeal.id) : false}
         onClose={() => setOpenMeal(null)}
-        onNotForMe={notForMe}
-        onUndoNotForMe={undoNotForMe}
-        onSkip={skipMeal}
-        onInclude={includeMeal}
-        onPin={pinMeal}
-        onUnpin={unpinMeal}
+        onToggleFavorite={toggleFavorite}
+        onAdd={pinMeal}
+        onRemove={skipMeal}
+        onNeverShow={neverShow}
+        onShowAgain={showAgain}
       />
     </div>
   );

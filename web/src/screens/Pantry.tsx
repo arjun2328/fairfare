@@ -1,6 +1,8 @@
-// F3: what's already in the kitchen, so the solver only buys the gap. Levels only, never grams
-// claimed from a photo; grams come back from POST /pantry/grams and land in household.pantry.
-import { useEffect, useState, type ChangeEvent, type KeyboardEvent } from "react";
+// F3: what's already in the kitchen, so the solver only buys the gap. One task top to bottom:
+// type or scan -> review the "On hand" chips (the chip is the confirmation step) -> "Update my plan".
+// Levels only, never grams claimed from a photo; grams come back from POST /pantry/grams and land in
+// household.pantry, then we re-solve and return the user to the plan.
+import { useEffect, useRef, useState, type ChangeEvent, type KeyboardEvent } from "react";
 import { Camera, Check } from "lucide-react";
 import { useApp } from "../state";
 import { api, ApiError } from "../api";
@@ -49,11 +51,12 @@ async function fileToBase64Jpeg(file: File): Promise<string> {
   return comma >= 0 ? jpeg.slice(comma + 1) : jpeg;
 }
 
-const NOTHING_RECOGNIZED = "Nothing recognized from our list. Add items yourself or try again.";
-const COMPOSER_DEFAULT = "Type items and tap Add — we'll match them to our list.";
+const NOTHING_RECOGNIZED = "Nothing from our list matched. Try other words, or tap Add item.";
+const COMPOSER_DEFAULT = "Say what you have, like: rice, eggs, half a bag of spinach.";
+const PHOTO_FAILED = "Couldn't read that photo. Try more light, or type what you have.";
 
 export default function Pantry() {
-  const { household, plan, ingredients, pantryItems, setPantryItems, setHousehold, resolveNow } = useApp();
+  const { household, ingredients, pantryItems, setPantryItems, setHousehold, resolveNow, navigate } = useApp();
 
   const [photoLoading, setPhotoLoading] = useState(false);
   const [photoMsg, setPhotoMsg] = useState<string | null>(null);
@@ -62,18 +65,31 @@ export default function Pantry() {
   const [textLoading, setTextLoading] = useState(false);
   const [textMsg, setTextMsg] = useState<string | null>(null);
 
-  const [confirmStatus, setConfirmStatus] = useState<"idle" | "saving" | "done">("idle");
-  const [confirmMsg, setConfirmMsg] = useState<string | null>(null);
-  const [pendingConfirm, setPendingConfirm] = useState(false);
+  const [updating, setUpdating] = useState(false);
+  const [updateMsg, setUpdateMsg] = useState<string | null>(null);
+  const [pendingUpdate, setPendingUpdate] = useState(false);
+
+  // Don't navigate from a stale promise if the user already left this screen.
+  const alive = useRef(true);
+  useEffect(() => {
+    alive.current = true;
+    return () => {
+      alive.current = false;
+    };
+  }, []);
 
   // Wait for the household update (pantry grams) to land before forcing a solve, so resolveNow
   // reads the fresh household rather than a stale ref from before this render committed.
   useEffect(() => {
-    if (!pendingConfirm) return;
-    setPendingConfirm(false);
-    void resolveNow().then(() => setConfirmStatus("done"));
+    if (!pendingUpdate) return;
+    setPendingUpdate(false);
+    void resolveNow().then(() => {
+      if (!alive.current) return;
+      setUpdating(false);
+      navigate("/plan");
+    });
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [pendingConfirm, household]);
+  }, [pendingUpdate, household]);
 
   if (!household) return null;
 
@@ -89,7 +105,7 @@ export default function Pantry() {
         setPantryItems(mergeItems(pantryItems, detected));
       }
     } catch {
-      setPhotoMsg("Couldn't read that photo. Try more light, or type what you have.");
+      setPhotoMsg(PHOTO_FAILED);
     } finally {
       setPhotoLoading(false);
     }
@@ -115,7 +131,7 @@ export default function Pantry() {
         setTextValue("");
       }
     } catch {
-      setTextMsg("Couldn't read that note. Try again, or add items yourself.");
+      setTextMsg("Couldn't read that note. Try again, or tap Add item.");
     } finally {
       setTextLoading(false);
     }
@@ -128,35 +144,38 @@ export default function Pantry() {
     }
   }
 
-  async function handleConfirm() {
-    if (!household) return;
-    setConfirmStatus("saving");
-    setConfirmMsg(null);
+  async function handleUpdatePlan() {
+    if (!household || updating) return;
+    setUpdating(true);
+    setUpdateMsg(null);
     try {
       const grams = await api.pantryGrams(pantryItems);
       setHousehold({ pantry: grams, assume_staples: household.assume_staples });
-      setPendingConfirm(true);
+      setPendingUpdate(true);
     } catch (err) {
-      setConfirmStatus("idle");
-      setConfirmMsg(err instanceof ApiError ? err.detail : "Couldn't save your pantry. Try again.");
+      setUpdating(false);
+      setUpdateMsg(err instanceof ApiError ? err.detail : "Couldn't save your pantry. Try again.");
     }
   }
 
-  const fromPantryEntries = plan ? Object.entries(plan.from_pantry) : [];
+  const applied = Object.keys(household.pantry).length > 0;
+  const hasStaples = Object.values(ingredients).some((i) => i.staple);
+  const hasItems = pantryItems.some((p) => p.source !== "staple");
   const composerHint = textLoading ? "Reading your note…" : (textMsg ?? COMPOSER_DEFAULT);
 
   return (
-    <div className="screen">
+    <div className="screen pantry">
       <div className="topbar">
         <h2>Your pantry</h2>
       </div>
-      <p className="quiz-sub">We'll only buy what you don't have. Amounts are estimates.</p>
+      <p className="subnote pantry-lede">We only buy what you don't have. Amounts are estimates.</p>
 
       <section className="composer">
         <div className="composer-row">
           <input
             type="text"
-            placeholder="Type what you have, comma separated"
+            placeholder="Type items, comma separated"
+            aria-label="Type items, comma separated"
             value={textValue}
             onChange={(e) => setTextValue(e.target.value)}
             onKeyDown={onComposerKeyDown}
@@ -170,7 +189,7 @@ export default function Pantry() {
             Add
           </button>
         </div>
-        <p className="composer-hint">{composerHint}</p>
+        <p className="composer-hint" aria-live="polite">{composerHint}</p>
       </section>
 
       <label className="scan-btn">
@@ -180,46 +199,40 @@ export default function Pantry() {
         <input type="file" accept="image/*" capture="environment" style={{ display: "none" }} onChange={onFileChange} />
       </label>
       {(photoLoading || photoMsg) && (
-        <p className="composer-hint" style={{ marginTop: -12, marginBottom: 20 }}>
+        <p className="composer-hint pantry-scan-msg" aria-live="polite">
           {photoLoading ? "Reading your photo…" : photoMsg}
         </p>
       )}
 
-      <StapleChips />
-
-      <PantryChecklist />
-
-      <button
-        type="button"
-        className="btn-primary"
-        disabled={confirmStatus === "saving"}
-        onClick={() => void handleConfirm()}
-      >
-        {confirmStatus === "saving" ? "Saving…" : "Save pantry"}
-      </button>
-      {confirmMsg && <p className="composer-hint">{confirmMsg}</p>}
-
-      {confirmStatus === "done" && (
-        <div style={{ marginTop: 18 }}>
-          <div className="infobox">
-            <Check className="ic" aria-hidden="true" />
-            <span>Saved. Your cart just got shorter.</span>
-          </div>
-          {fromPantryEntries.length > 0 ? (
-            fromPantryEntries.map(([id, grams]) => (
-              <div key={id} className="ing have">
-                <div className="ing-top">
-                  <span className="dot" aria-hidden="true" />
-                  <span className="name">{ingredients[id]?.name ?? id}</span>
-                  <span className="subnote">estimated {grams} g</span>
-                </div>
-              </div>
-            ))
-          ) : (
-            <p className="subnote">This trip's meals didn't need anything from your pantry.</p>
+      <section className="pantry-onhand">
+        <div className="pantry-onhand__head">
+          <h3 className="section-title section-title--sm">On hand</h3>
+          {applied && (
+            <span className="subnote pantry-onhand__applied">
+              <Check className="ic" aria-hidden="true" />
+              Applied to your plan
+            </span>
           )}
         </div>
-      )}
+        <p className="subnote pantry-onhand__hint">
+          Tap a staple you're out of. Tap an item to change how much you have.
+        </p>
+        <div className="plist">
+          <StapleChips />
+          <PantryChecklist />
+        </div>
+        {!hasStaples && !hasItems && (
+          <p className="subnote pantry-empty">Nothing here yet. Type or scan what you have.</p>
+        )}
+      </section>
+
+      <div className="cta-pinned pantry-cta">
+        <button type="button" className="btn-primary" disabled={updating} onClick={() => void handleUpdatePlan()}>
+          {updating ? "Updating…" : "Update my plan"}
+        </button>
+      </div>
+      {updateMsg && <p className="composer-hint pantry-update-msg">{updateMsg}</p>}
+      <p className="disclaim center pantry-disclaim">Estimated from package sizes. The planner uses what you have first.</p>
     </div>
   );
 }

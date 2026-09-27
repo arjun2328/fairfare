@@ -13,8 +13,8 @@ import {
 import { api, ApiError } from "./api";
 import { DEFAULT_HOUSEHOLD, type Household, type Ingredient, type Meal, type MealFacts, type PantryItem, type Plan } from "./types";
 
-export type Path = "/quiz" | "/home" | "/plan" | "/pantry" | "/list" | "/register" | "/cookbook" | "/profile";
-const PATHS: Path[] = ["/quiz", "/home", "/plan", "/pantry", "/list", "/register", "/cookbook", "/profile"];
+export type Path = "/quiz" | "/plan" | "/recipes" | "/cookbook" | "/pantry" | "/list" | "/register" | "/profile";
+const PATHS: Path[] = ["/quiz", "/plan", "/recipes", "/cookbook", "/pantry", "/list", "/register", "/profile"];
 
 // v2 keys: the stored household gained fields and new defaults; older entries are ignored on purpose.
 const LS = { household: "stretch.v2.household", pantry: "stretch.v2.pantryItems", session: "stretch.sessionId" };
@@ -42,7 +42,7 @@ function newSessionId(): string {
 }
 function currentPath(): Path {
   const p = window.location.pathname as Path;
-  return PATHS.includes(p) ? p : "/home";
+  return PATHS.includes(p) ? p : "/plan";
 }
 
 export interface AppState {
@@ -78,6 +78,8 @@ export interface AppActions {
   skipMeal(id: string): void;
   /** Allow a skipped meal again. */
   includeMeal(id: string): void;
+  /** Save to / remove from the cookbook; the solver leans toward saved recipes. */
+  toggleFavorite(id: string): void;
 }
 
 const Ctx = createContext<(AppState & AppActions) | null>(null);
@@ -210,7 +212,7 @@ export function StateProvider({ children }: { children: ReactNode }) {
       setPrevPlan(null);
       setSolveError(null);
       setHouseholdState(h);
-      navigate("/home");
+      navigate("/plan");
     },
     [navigate],
   );
@@ -250,6 +252,14 @@ export function StateProvider({ children }: { children: ReactNode }) {
     });
   }, []);
 
+  const toggleFavorite = useCallback((id: string) => {
+    setHouseholdState((h) => {
+      if (!h) return h;
+      const has = h.favorite_meals.includes(id);
+      return { ...h, favorite_meals: has ? h.favorite_meals.filter((x) => x !== id) : [...h.favorite_meals, id] };
+    });
+  }, []);
+
   const value = useMemo<AppState & AppActions>(
     () => ({
       household,
@@ -274,9 +284,11 @@ export function StateProvider({ children }: { children: ReactNode }) {
       unpinMeal,
       skipMeal,
       includeMeal,
+      toggleFavorite,
     }),
     [household, plan, prevPlan, pantryItems, sessionId, ingredients, meals, facts, solving, solveError, apiOk, path,
-     navigate, setHousehold, startHousehold, resetHousehold, setPantryItems, runSolve, pinMeal, unpinMeal, skipMeal, includeMeal],
+     navigate, setHousehold, startHousehold, resetHousehold, setPantryItems, runSolve, pinMeal, unpinMeal, skipMeal,
+     includeMeal, toggleFavorite],
   );
 
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>;

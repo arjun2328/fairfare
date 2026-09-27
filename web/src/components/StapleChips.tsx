@@ -1,6 +1,7 @@
-// Staples row on Pantry: chips for every Ingredient.staple, all "on" (assumed on hand) by default.
-// Deselecting a chip turns off assume_staples for the whole household and instead lists the
-// still-selected staples explicitly as PantryItems so the solver keeps crediting them.
+// Staple chips inside the "On hand" row on Pantry: one chip per Ingredient.staple, all on hand by
+// default. Tapping one marks it "out": assume_staples turns off for the whole household and the
+// still-selected staples are listed explicitly as PantryItems so the solver keeps crediting them.
+// Renders chips only; the parent (Pantry.tsx) owns the surrounding .plist row.
 import { useApp } from "../state";
 import type { PantryItem } from "../types";
 
@@ -16,10 +17,10 @@ export default function StapleChips() {
   const staplePantryIds = new Set(
     pantryItems.filter((p) => p.source === "staple").map((p) => p.ingredient_id),
   );
-  const isSelected = (id: string) => (household.assume_staples ? true : staplePantryIds.has(id));
+  const isOnHand = (id: string) => (household.assume_staples ? true : staplePantryIds.has(id));
 
   function toggle(id: string) {
-    const currentlySelected = staples.filter((s) => isSelected(s.id)).map((s) => s.id);
+    const currentlySelected = staples.filter((s) => isOnHand(s.id)).map((s) => s.id);
     const nowSelected = currentlySelected.includes(id)
       ? currentlySelected.filter((x) => x !== id)
       : [...currentlySelected, id];
@@ -40,22 +41,22 @@ export default function StapleChips() {
   }
 
   return (
-    <section style={{ marginBottom: 22 }}>
-      <h3 className="section-title section-title--sm">Staples on hand</h3>
-      <p className="subnote" style={{ marginBottom: 10 }}>Tap anything you're out of.</p>
-      <div className="plist">
-        {staples.map((s) => (
+    <>
+      {staples.map((s) => {
+        const on = isOnHand(s.id);
+        return (
           <button
             key={s.id}
             type="button"
-            className={`chip${isSelected(s.id) ? "" : " off"}`}
-            aria-pressed={isSelected(s.id)}
+            className={`chip chip--staple${on ? "" : " off"}`}
+            aria-pressed={on}
+            title={on ? "On hand. Tap if you're out." : "Marked out. Tap if you have it."}
             onClick={() => toggle(s.id)}
           >
             {s.name}
           </button>
-        ))}
-      </div>
-    </section>
+        );
+      })}
+    </>
   );
 }

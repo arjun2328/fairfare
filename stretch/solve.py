@@ -17,6 +17,7 @@ _PER_100G = {
 SLOTS = ("breakfast", "lunch", "dinner")
 UNCOVERED_PENALTY = 1_000_000  # per serving, in the x100-scaled objective; dwarfs palatability
 VARIETY_BONUS = 20_000  # per distinct meal, only once the variety floor has been relaxed
+FAVORITE_BONUS = 20_000  # per batch of a saved (cookbook) recipe: worth about two palatability points
 
 
 def _candidates(meals: list[Meal], ingredients: dict[str, Ingredient],
@@ -166,6 +167,7 @@ def solve(meals: list[Meal],
     out_of_stock = set(household.out_of_stock)
 
     required = [m.id for m in cand if m.id in set(household.required_meals)]
+    favorites = set(household.favorite_meals)
 
     # ---- model, built per attempt so rules can be relaxed in order ----
     def attempt(min_distinct: int, max_repeat: int, soft_slots: bool, limit: float,
@@ -237,6 +239,7 @@ def solve(meals: list[Meal],
         budget = snap_cap + household.cash_cents
         model.Maximize(
             10000 * sum(x[m.id] * m.palatability for m in cand)
+            + FAVORITE_BONUS * sum(x[m.id] for m in cand if m.id in favorites)
             + variety_bonus * sum(used.values())
             - 200 * short_kcal100
             - 2000 * short_protein

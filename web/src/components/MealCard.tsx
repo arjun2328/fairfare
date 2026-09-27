@@ -1,74 +1,106 @@
-import { Check, Plus, X } from "lucide-react";
+import { Check, Heart, Plus } from "lucide-react";
 import { fmtMoney } from "../format";
 import type { Meal } from "../types";
 import MealPhoto from "./MealPhoto";
 
-export type MealBadge = "in" | "out" | "muted";
-
-const BADGE: Record<MealBadge, { Icon: typeof Check; label: string }> = {
-  in: { Icon: Check, label: "In your plan, tap to skip" },
-  out: { Icon: Plus, label: "Not in your plan, tap to add" },
-  muted: { Icon: X, label: "Marked not for me" },
-};
-
-/** Photo-left row card. The card opens the meal; the round badge over the photo toggles it in or out of the plan. */
+/** Photo-left row card. The body opens the meal; the right column holds the heart (save to cookbook) and Add / Added. */
 export default function MealCard({
   meal,
   servingCents,
   times,
-  badge,
+  tag,
+  favorite,
+  inTrip,
   onOpen,
-  onBadge,
+  onToggleFavorite,
+  onAdd,
+  onRemove,
   loading,
 }: {
   meal: Meal;
   servingCents?: number;
   times?: number;
-  badge?: MealBadge | null;
+  tag?: string;
+  favorite?: boolean;
+  inTrip?: boolean;
   onOpen: () => void;
-  onBadge?: () => void;
+  onToggleFavorite?: () => void;
+  onAdd?: () => void;
+  onRemove?: () => void;
   loading?: boolean;
 }) {
-  const b = badge ? BADGE[badge] : null;
-  const BadgeIcon = b?.Icon;
+  const showAdd = !!onAdd && !inTrip;
+  const showAdded = !!inTrip && !!onRemove;
+  const hasActions = !!onToggleFavorite || showAdd || showAdded;
+  const cls = `meal-card${hasActions ? "" : " meal-card--plain"}${loading ? " loading" : ""}`;
 
   return (
-    <div className={`meal-card${loading ? " loading" : ""}`}>
+    <div className={cls}>
       <button type="button" className="meal-card__body" onClick={onOpen}>
         <MealPhoto meal={meal} variant="card" />
         <span className="meal-card__text">
           <span className="meal-card__name">{meal.name}</span>
           {meal.description && <span className="subnote meal-card__desc">{meal.description}</span>}
           <span className="meal-card__tags">
-            <span className="tag mute">{meal.prep_min} min</span>
-            <span className="tag mute">serves {meal.servings}</span>
             {typeof servingCents === "number" && <span className="tag cost">{fmtMoney(servingCents)}/serving</span>}
+            {tag && <span className="tag fact">{tag}</span>}
             {times !== undefined && times > 0 && <span className="tag nutri">{times}× this trip</span>}
           </span>
         </span>
       </button>
 
-      {b && BadgeIcon && (onBadge ? (
-        <button
-          type="button"
-          className={`meal-badge meal-badge--${badge}`}
-          aria-label={b.label}
-          onClick={(e) => {
-            e.stopPropagation();
-            onBadge();
-          }}
-        >
-          <span className="meal-badge__dot">
-            <BadgeIcon className="ic" aria-hidden="true" />
-          </span>
-        </button>
-      ) : (
-        <span className={`meal-badge meal-badge--${badge}`} role="img" aria-label={b.label}>
-          <span className="meal-badge__dot">
-            <BadgeIcon className="ic" aria-hidden="true" />
-          </span>
-        </span>
-      ))}
+      {hasActions && (
+        <div className="meal-card__actions">
+          {onToggleFavorite && (
+            <button
+              type="button"
+              className={`meal-card__heart${favorite ? " on" : ""}`}
+              aria-label={favorite ? "Saved, tap to remove" : "Save to cookbook"}
+              aria-pressed={!!favorite}
+              onClick={(e) => {
+                e.stopPropagation();
+                onToggleFavorite();
+              }}
+            >
+              <Heart className="ic" fill={favorite ? "currentColor" : "none"} aria-hidden="true" />
+            </button>
+          )}
+
+          {showAdd && (
+            <button
+              type="button"
+              className="meal-card__pillbtn"
+              aria-label="Add to this trip"
+              onClick={(e) => {
+                e.stopPropagation();
+                onAdd?.();
+              }}
+            >
+              <span className="meal-card__pill">
+                <Plus className="ic" aria-hidden="true" />
+                Add
+              </span>
+            </button>
+          )}
+
+          {showAdded && (
+            <button
+              type="button"
+              className="meal-card__pillbtn"
+              aria-label="In your trip, tap to remove"
+              onClick={(e) => {
+                e.stopPropagation();
+                onRemove?.();
+              }}
+            >
+              <span className="meal-card__pill meal-card__pill--in">
+                <Check className="ic" aria-hidden="true" />
+                Added
+              </span>
+            </button>
+          )}
+        </div>
+      )}
     </div>
   );
 }

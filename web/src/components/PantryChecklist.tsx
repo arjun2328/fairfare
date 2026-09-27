@@ -1,7 +1,10 @@
-// Detected + manual pantry items on the Pantry screen: a chip per item (tap to cycle full/half/low,
-// × to drop it) plus a searchable "+ add item" control. Confirm lives in the parent (Pantry.tsx)
-// because it needs household/plan context; this component only edits the working item list.
+// Detected and hand-added pantry items inside the "On hand" row on Pantry: one chip per item showing
+// name + level. Tapping cycles full -> half -> low -> removed, so the chip itself is the review step
+// (non-negotiable 9: the user confirms every detected item before it reaches household.pantry).
+// Also renders the "+ Add item" chip and its search sheet (the manual path, source="manual").
+// Renders chips only; the parent (Pantry.tsx) owns the surrounding .plist row and the Update button.
 import { useState } from "react";
+import { Plus } from "lucide-react";
 import { useApp } from "../state";
 import type { PantryLevel } from "../types";
 
@@ -14,23 +17,26 @@ export default function PantryChecklist() {
 
   const items = pantryItems.filter((p) => p.source !== "staple");
 
-  function cycleLevel(id: string) {
-    setPantryItems(
-      pantryItems.map((p) =>
-        p.ingredient_id === id
-          ? { ...p, level: LEVELS[(LEVELS.indexOf(p.level) + 1) % LEVELS.length] }
-          : p,
-      ),
-    );
-  }
-
-  function removeItem(id: string) {
-    setPantryItems(pantryItems.filter((p) => p.ingredient_id !== id));
+  /** full -> half -> low -> gone. */
+  function tapItem(id: string) {
+    const item = pantryItems.find((p) => p.ingredient_id === id);
+    if (!item) return;
+    const next = LEVELS[LEVELS.indexOf(item.level) + 1];
+    if (next === undefined) {
+      setPantryItems(pantryItems.filter((p) => p.ingredient_id !== id));
+    } else {
+      setPantryItems(pantryItems.map((p) => (p.ingredient_id === id ? { ...p, level: next } : p)));
+    }
   }
 
   function addItem(id: string) {
     const rest = pantryItems.filter((p) => p.ingredient_id !== id);
     setPantryItems([...rest, { ingredient_id: id, level: "full", source: "manual" }]);
+    setAddOpen(false);
+    setQuery("");
+  }
+
+  function closeSheet() {
     setAddOpen(false);
     setQuery("");
   }
@@ -43,59 +49,32 @@ export default function PantryChecklist() {
     .slice(0, 40);
 
   return (
-    <section style={{ marginBottom: 22 }}>
-      <h3 className="section-title section-title--sm">On hand</h3>
-      {items.length === 0 ? (
-        <p className="subnote" style={{ marginBottom: 10 }}>
-          Nothing added yet. Snap a photo, type what you have, or add an item below.
-        </p>
-      ) : (
-        <div className="plist" style={{ marginBottom: 12 }}>
-          {items.map((item) => {
-            const name = ingredients[item.ingredient_id]?.name ?? item.ingredient_id;
-            return (
-              <div key={item.ingredient_id} style={{ display: "inline-flex", alignItems: "center", gap: 4 }}>
-                <button
-                  type="button"
-                  className="chip new"
-                  onClick={() => cycleLevel(item.ingredient_id)}
-                  aria-label={`Amount of ${name}: ${item.level}. Tap to change.`}
-                >
-                  {name} · {item.level}
-                </button>
-                <button
-                  type="button"
-                  aria-label="Remove"
-                  onClick={() => removeItem(item.ingredient_id)}
-                  style={{
-                    border: "none",
-                    background: "none",
-                    color: "var(--ink-soft)",
-                    fontSize: 18,
-                    lineHeight: 1,
-                    width: 32,
-                    height: 32,
-                    padding: 0,
-                    display: "inline-flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                  }}
-                >
-                  ×
-                </button>
-              </div>
-            );
-          })}
-        </div>
-      )}
+    <>
+      {items.map((item) => {
+        const name = ingredients[item.ingredient_id]?.name ?? item.ingredient_id;
+        const last = item.level === LEVELS[LEVELS.length - 1];
+        return (
+          <button
+            key={item.ingredient_id}
+            type="button"
+            className="chip new chip--have"
+            aria-label={`${name}, ${item.level}. ${last ? "Tap to remove." : "Tap to change the amount."}`}
+            onClick={() => tapItem(item.ingredient_id)}
+          >
+            {name}
+            <span className="chip-lvl">{item.level}</span>
+          </button>
+        );
+      })}
 
-      <button type="button" className="btn-line" onClick={() => setAddOpen(true)}>
-        + Add item
+      <button type="button" className="chip chip--add" onClick={() => setAddOpen(true)}>
+        <Plus className="ic" aria-hidden="true" />
+        Add item
       </button>
 
       {addOpen && (
         <div className="sheet" role="dialog" aria-modal="true" aria-label="Add an item">
-          <div className="sheet__backdrop" onClick={() => setAddOpen(false)} />
+          <div className="sheet__backdrop" onClick={closeSheet} />
           <div className="sheet__panel stack">
             <div className="sheet__handle" />
             <h2>Add an item</h2>
@@ -120,9 +99,12 @@ export default function PantryChecklist() {
                 </button>
               ))}
             </div>
+            <button type="button" className="link center" onClick={closeSheet}>
+              Cancel
+            </button>
           </div>
         </div>
       )}
-    </section>
+    </>
   );
 }

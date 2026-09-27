@@ -1,5 +1,5 @@
 import { useEffect, type ReactNode } from "react";
-import { Check, Leaf, ThumbsDown, X } from "lucide-react";
+import { Check, Heart, Leaf, Plus, X } from "lucide-react";
 import { fmtMoney } from "../format";
 import type { Ingredient, Meal, MealFacts } from "../types";
 import MealPhoto from "./MealPhoto";
@@ -10,37 +10,37 @@ function joinNames(names: string[]): string {
   return `${names.slice(0, -1).join(", ")} and ${names[names.length - 1]}`;
 }
 
-/** Recipe-detail bottom sheet: photo, per-serving facts, SNAP note, add/skip/pin actions, ingredients with SNAP/Card tags. */
+/** Recipe-detail bottom sheet: photo, per-serving facts, SNAP note, Add/Remove + Save, ingredients with SNAP/Card tags. */
 export default function MealDetail({
   meal,
   ingredients,
   facts,
   times,
+  favorite,
+  inTrip,
+  pinnedNotFit,
   excluded,
-  included,
-  pinned,
   onClose,
-  onNotForMe,
-  onUndoNotForMe,
-  onSkip,
-  onInclude,
-  onPin,
-  onUnpin,
+  onToggleFavorite,
+  onAdd,
+  onRemove,
+  onNeverShow,
+  onShowAgain,
 }: {
   meal: Meal | null;
   ingredients: Record<string, Ingredient>;
   facts?: MealFacts;
   times?: number;
+  favorite: boolean;
+  inTrip: boolean;
+  pinnedNotFit: boolean;
   excluded: boolean;
-  included: boolean;
-  pinned: boolean;
   onClose: () => void;
-  onNotForMe: (id: string) => void;
-  onUndoNotForMe: (id: string) => void;
-  onSkip: (id: string) => void;
-  onInclude: (id: string) => void;
-  onPin: (id: string) => void;
-  onUnpin: (id: string) => void;
+  onToggleFavorite: (id: string) => void;
+  onAdd: (id: string) => void;
+  onRemove: (id: string) => void;
+  onNeverShow: (id: string) => void;
+  onShowAgain: (id: string) => void;
 }) {
   const open = meal !== null;
   useEffect(() => {
@@ -54,42 +54,40 @@ export default function MealDetail({
 
   if (!meal) return null;
 
-  const inTrip = times !== undefined && times > 0;
   const meta = facts
     ? `${meal.prep_min} min · ${fmtMoney(facts.serving_cents)} / serving · ${meal.servings} servings`
     : `${meal.prep_min} min · ${meal.servings} servings`;
   const cashNames = facts ? joinNames(facts.cash_ingredients.map((id) => ingredients[id]?.name ?? id)) : "";
 
-  let action: ReactNode;
+  let status: string | null = null;
+  if (inTrip) status = times ? `In your plan · cooked ${times}× this trip` : "In your plan";
+  else if (pinnedNotFit) status = "Added, but it didn't fit this trip's budget";
+  else if (favorite) status = "Saved in your cookbook";
+
+  let primary: ReactNode;
   if (inTrip) {
-    action = (
-      <button type="button" className="btn-line on" onClick={() => onSkip(meal.id)}>
-        Added to this trip
+    primary = (
+      <button type="button" className="btn-line on meal-detail__main" aria-label="Remove from trip" onClick={() => onRemove(meal.id)}>
+        In your trip
         <Check className="ic" aria-hidden="true" />
       </button>
     );
-  } else if (pinned) {
-    action = (
-      <button type="button" className="btn-line on" onClick={() => onUnpin(meal.id)}>
-        Pinned · didn't fit this trip
-      </button>
-    );
-  } else if (excluded) {
-    action = (
-      <button type="button" className="btn-line" onClick={() => onUndoNotForMe(meal.id)}>
-        Add back
-      </button>
-    );
-  } else if (!included) {
-    action = (
-      <button type="button" className="btn-line" onClick={() => onInclude(meal.id)}>
-        Include this trip
+  } else if (pinnedNotFit) {
+    primary = (
+      <button
+        type="button"
+        className="btn-line meal-detail__main meal-detail__main--dim"
+        aria-label="Remove from trip"
+        onClick={() => onRemove(meal.id)}
+      >
+        Didn't fit this trip's budget
       </button>
     );
   } else {
-    action = (
-      <button type="button" className="btn-primary" onClick={() => onPin(meal.id)}>
-        Add to this trip
+    primary = (
+      <button type="button" className="btn-primary meal-detail__main" onClick={() => onAdd(meal.id)}>
+        <Plus className="ic" aria-hidden="true" />
+        Add to trip
       </button>
     );
   }
@@ -111,6 +109,7 @@ export default function MealDetail({
           <h2>{meal.name}</h2>
           {meal.description && <p className="meal-detail__desc">{meal.description}</p>}
           <p className="meal-detail__metaline">{meta}</p>
+          {status && <p className="meal-detail__status">{status}</p>}
         </div>
 
         {facts && (
@@ -155,18 +154,35 @@ export default function MealDetail({
         )}
 
         <div className="meal-detail__actions">
-          {action}
-          {!excluded && (
+          <div className="meal-detail__btns">
+            {primary}
             <button
               type="button"
-              className="btn-text"
+              className={`btn-line meal-detail__heart${favorite ? " on" : ""}`}
+              aria-label={favorite ? "Saved" : "Save to cookbook"}
+              aria-pressed={favorite}
+              onClick={() => onToggleFavorite(meal.id)}
+            >
+              <Heart className="ic" aria-hidden="true" fill={favorite ? "currentColor" : "none"} />
+            </button>
+          </div>
+          {excluded ? (
+            <div className="meal-detail__hidden">
+              <span className="tag mute">Hidden</span>
+              <button type="button" className="meal-detail__quiet" onClick={() => onShowAgain(meal.id)}>
+                Show again
+              </button>
+            </div>
+          ) : (
+            <button
+              type="button"
+              className="meal-detail__quiet"
               onClick={() => {
-                onNotForMe(meal.id);
+                onNeverShow(meal.id);
                 onClose();
               }}
             >
-              <ThumbsDown className="ic" aria-hidden="true" />
-              Not for me
+              Don't suggest this again
             </button>
           )}
         </div>

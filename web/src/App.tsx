@@ -1,33 +1,34 @@
 import { StateProvider, useApp } from "./state";
 import TabBar from "./components/TabBar";
 import PlanBar from "./components/PlanBar";
+import Toast from "./components/Toast";
 import Quiz from "./screens/Quiz";
-import Home from "./screens/Home";
 import Plan from "./screens/Plan";
-import Pantry from "./screens/Pantry";
+import Recipes from "./screens/Recipes";
 import Cookbook from "./screens/Cookbook";
+import Pantry from "./screens/Pantry";
 import Profile from "./screens/Profile";
 import List from "./screens/List";
 import Register from "./screens/Register";
 
+/** One direct flow: Quiz -> Plan -> Shopping list -> Register. Recipes, Cookbook and Pantry change the plan and lead back to it. */
 function Shell() {
   const { path, apiOk } = useApp();
   const bare = path === "/quiz" || path === "/register";
-  // The sticky plan bar shows wherever the plan itself is not on screen.
-  const withPlanBar = path === "/home" || path === "/pantry" || path === "/cookbook" || path === "/profile";
+  const withPlanBar = path === "/recipes" || path === "/cookbook" || path === "/pantry" || path === "/profile";
   let screen;
   switch (path) {
     case "/quiz":
       screen = <Quiz />;
       break;
-    case "/home":
-      screen = <Home />;
-      break;
-    case "/pantry":
-      screen = <Pantry />;
+    case "/recipes":
+      screen = <Recipes />;
       break;
     case "/cookbook":
       screen = <Cookbook />;
+      break;
+    case "/pantry":
+      screen = <Pantry />;
       break;
     case "/profile":
       screen = <Profile />;
@@ -50,6 +51,7 @@ function Shell() {
       )}
       {screen}
       {withPlanBar && <PlanBar />}
+      {!bare && <Toast />}
       {!bare && <TabBar />}
     </div>
   );
