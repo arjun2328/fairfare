@@ -115,3 +115,8 @@
 
 .link--danger { color: var(--red); text-decoration: none; font-size: 14px; margin-top: 12px; }
 .link--danger.armed { font-weight: 700; }
+
+/* quiz sub-labels: room above a label that follows a list of options or chips, and below every label */
+.quiz-q .small.strong { margin-bottom: 10px; }
+.quiz-q .quiz-opts + .small.strong, .quiz-q .plist + .small.strong { margin-top: 24px; padding-top: 16px; border-top: 1px solid var(--line); }
+.quiz-q .quiz-opts + .quiz-opts { margin-top: 12px; }

@@ -246,7 +246,7 @@ export default function Quiz() {
             </div>
           </div>
           <p className="disclaim">Entered manually — not connected to your EBT account.</p>
-          <div className="stack stack--tight">
+          <div className="stack stack--tight quiz-follow">
             <p className="small strong">Shopping for the next {answers.tripDays} days</p>
             <input
               type="range"
