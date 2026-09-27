@@ -7,46 +7,49 @@ import type { Plan } from "../types";
 const SHOW_MS = 7000;
 const QUIET_AFTER_MS = 400;
 
-/** Feedback for every re-solve: the plan's what_changed line for 4 s (tap to dismiss), and a quiet
- *  "Updating your plan…" while a solve runs longer than 400 ms. Mounted once in App; reads only from context. */
+/** Feedback for every re-solve: a dropped pin is announced once, when it first fails; otherwise the plan's
+ *  what_changed line. A quiet "Updating your plan…" shows while a solve runs longer than 400 ms. */
 export default function Toast() {
   const { plan, prevPlan, solving, household, meals } = useApp();
   const [message, setMessage] = useState<string | null>(null);
   const [quiet, setQuiet] = useState(false);
   const shownFor = useRef<Plan | null>(null);
+  const seenDropped = useRef<Set<string>>(new Set()); // pins already announced as not fitting
   const hideTimer = useRef<number | null>(null);
 
-  // A new plan object shows a toast: first a dropped pin (the user's tap did not take), else what_changed.
   useEffect(() => {
     if (!plan || plan === shownFor.current) return;
     shownFor.current = plan;
+
     let text = plan.what_changed?.trim() || "";
-    if (plan.relaxed.includes("pins")) {
-      // Pins are appended in tap order, so the last one that did not make it is the recipe just added.
-      const droppedAll = (household?.required_meals ?? []).filter((id) => !(plan.meals[id] > 0));
-      const dropped = droppedAll[droppedAll.length - 1];
-      if (dropped) {
-        const m = meals[dropped];
-        const name = m?.name ?? "That recipe";
-        const more = droppedAll.length > 1 ? ` ${droppedAll.length - 1} other added recipe${droppedAll.length > 2 ? "s" : ""} also didn't fit.` : "";
-        const missingEq = m ? m.equipment.filter((e) => !(household?.equipment ?? []).includes(e)) : [];
-        if (missingEq.length > 0) {
-          text = `${name} needs ${missingEq.join(" and ")}. Add it under Kitchen setup in Profile.${more}`;
-        } else if (m && household && m.prep_min > household.max_prep_min) {
-          text = `${name} takes ${m.prep_min} minutes, over your ${household.max_prep_min}-minute limit. Raise it in Profile.${more}`;
-        } else {
-          text = `${name} didn't fit this trip's ${fmtMoney(plan.trip_snap_cap_cents)}. Raise your balance or remove a meal.${more}`;
-        }
+    if (text === "No changes.") text = "";
+
+    const required = household?.required_meals ?? [];
+    const droppedAll = plan.relaxed.includes("pins") ? required.filter((id) => !(plan.meals[id] > 0)) : [];
+    const fresh = droppedAll.filter((id) => !seenDropped.current.has(id));
+    seenDropped.current = new Set(droppedAll);
+    const dropped = fresh[fresh.length - 1]; // pins are appended in tap order; the last new one is the recipe just added
+    if (dropped && prevPlan) {
+      const m = meals[dropped];
+      const name = m?.name ?? "That recipe";
+      const missingEq = m ? m.equipment.filter((e) => !(household?.equipment ?? []).includes(e)) : [];
+      if (missingEq.length > 0) {
+        text = `${name} needs ${missingEq.join(" and ")}. Add it under Kitchen setup in Profile.`;
+      } else if (m && household && m.prep_min > household.max_prep_min) {
+        text = `${name} takes ${m.prep_min} minutes, over your ${household.max_prep_min}-minute limit. Raise it in Profile.`;
+      } else {
+        text = `${name} didn't fit this trip's ${fmtMoney(plan.trip_snap_cap_cents)}. Raise your balance or remove a meal.`;
       }
     }
-    if (!text || (!prevPlan && !plan.relaxed.includes("pins"))) return;
+
+    if (!text || !prevPlan) return;
     setMessage(text);
     if (hideTimer.current !== null) window.clearTimeout(hideTimer.current);
     hideTimer.current = window.setTimeout(() => {
       setMessage(null);
       hideTimer.current = null;
     }, SHOW_MS);
-  }, [plan, prevPlan]);
+  }, [plan, prevPlan, household, meals]);
 
   useEffect(
     () => () => {
