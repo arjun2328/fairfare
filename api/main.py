@@ -22,7 +22,7 @@ _origins = [o.strip() for o in os.getenv("CORS_ORIGINS", "http://localhost:5173"
 app.add_middleware(
     CORSMiddleware,
     allow_origins=_origins,
-    allow_origin_regex=r"^https?://(localhost|127\.0\.0\.1|192\.168\.\d+\.\d+|10\.\d+\.\d+\.\d+)(:\d+)?$|^https://[a-z0-9-]+(\.[a-z0-9-]+)*\.vercel\.app$",
+    allow_origin_regex=r"^https?://(localhost|127\.0\.0\.1|192\.168\.\d+\.\d+|10\.\d+\.\d+\.\d+)(:\d+)?$|^https://[a-z0-9-]+(\.[a-z0-9-]+)*\.vercel\.app$|^https://(www\.)?ffare\.tech$",
     allow_methods=["*"],
     allow_headers=["*"],
 )
